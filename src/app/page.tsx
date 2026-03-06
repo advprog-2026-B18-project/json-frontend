@@ -1,63 +1,75 @@
-import Link from 'next/link';
+"use client";
 
-// Dummy Data 
-const dummyProducts = [
-  {
-    id: 1,
-    nama: "Tumbler Starbucks Sakura Edition",
-    deskripsi: "Tumbler edisi terbatas musim semi dari Jepang.",
-    harga: 450000,
-    stok: 5,
-    negaraAsal: "Jepang",
-    tanggalKembali: "2026-03-01",
-    jastiper: "BudiTravels"
-  },
-  {
-    id: 2,
-    nama: "Tiket Konser Coldplay",
-    deskripsi: "Kategori CAT 1, siap war tiket.",
-    harga: 3500000,
-    stok: 2,
-    negaraAsal: "Singapura",
-    tanggalKembali: "2026-04-15",
-    jastiper: "SiskaJastip"
-  }
-];
+import { useEffect, useState } from 'react';
 
-export default function KatalogPage() {
-  return (
-    <main className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Katalog JSON (Jasa Titip)</h1>
-        <Link href="/wallet" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Dompet Saya
-        </Link>
-      </div>
+interface Product {
+    id?: string;
+    name: string;
+    price: number;
+    stock: number;
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {dummyProducts.map((product) => (
-          <div key={product.id} className="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-            <h2 className="text-xl font-semibold mb-2">{product.nama}</h2>
-            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.deskripsi}</p>
-            
-            <div className="text-sm mb-4 space-y-1">
-              <p> Asal: <span className="font-medium">{product.negaraAsal}</span></p>
-              <p> Stok: <span className="font-medium">{product.stok} unit</span></p>
-              <p> Tiba: <span className="font-medium">{product.tanggalKembali}</span></p>
-              <p> Jastiper: <span className="font-medium text-blue-600">@{product.jastiper}</span></p>
-            </div>
+export default function Home() {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-lg font-bold text-green-600">
-                Rp {product.harga.toLocaleString('id-ID')}
-              </span>
-              <button className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
-                Ikut War / Beli
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </main>
-  );
+    useEffect(() => {
+        fetch('http://localhost:8080/api/products')
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data. Check if the backend is running!');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                setProducts(data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                setError(err.message);
+                setLoading(false);
+            });
+    }, []);
+
+    return (
+        <div style={{ padding: '30px', fontFamily: 'sans-serif', color: 'black', background: 'white', minHeight: '100vh' }}>
+            <h1>📦 JaStip Online Nasional (JSON) Catalog</h1>
+
+            {loading && <p>⏳ Loading data from the database...</p>}
+
+            {error && (
+                <div style={{ background: '#ffebee', padding: '10px', color: 'red', borderRadius: '5px' }}>
+                    <strong>Error:</strong> {error}
+                </div>
+            )}
+
+            {!loading && !error && products.length === 0 && (
+                <p>Database is empty. No products have been added yet.</p>
+            )}
+
+            {!loading && !error && products.length > 0 && (
+                <table border={1} style={{ borderCollapse: 'collapse', width: '100%', marginTop: '20px', color: 'black' }}>
+                    <thead style={{ background: '#f4f4f4', textAlign: 'left' }}>
+                    <tr>
+                        <th style={{ padding: '10px' }}>Product Name</th>
+                        <th style={{ padding: '10px' }}>Price (IDR)</th>
+                        <th style={{ padding: '10px' }}>Remaining Stock</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {products.map((product, index) => (
+                        <tr key={index}>
+                            <td style={{ padding: '10px' }}>{product.name}</td>
+                            <td style={{ padding: '10px' }}>
+                                {product.price.toLocaleString('id-ID')}
+                            </td>
+                            <td style={{ padding: '10px' }}>{product.stock}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    );
 }
