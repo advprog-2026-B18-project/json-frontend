@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
 
 type LoginSuccessResponse = {
   access_token: string;
@@ -29,9 +29,11 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (formData: FormData) => {
     setErrorMessage('');
+
+    const submittedEmail = String(formData.get('email') ?? '');
+    const submittedPassword = String(formData.get('password') ?? '');
 
     const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
     if (!baseUrl) {
@@ -47,7 +49,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: submittedEmail, password: submittedPassword }),
       });
 
       if (response.status === 200) {
@@ -77,7 +79,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-gray-100 p-8">
         <h1 className="text-2xl font-bold text-gray-900 text-center">Login</h1>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-6 space-y-4" action={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email

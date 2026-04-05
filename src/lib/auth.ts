@@ -1,4 +1,4 @@
-import { importSPKI, jwtVerify, type JWTPayload, type KeyLike } from 'jose';
+import { jwtVerify, type JWTPayload } from 'jose';
 
 export type JwtUserPayload = JWTPayload & {
   user_id?: string | number;
@@ -6,27 +6,26 @@ export type JwtUserPayload = JWTPayload & {
   roles?: string | string[];
 };
 
-let cachedPublicKey: KeyLike | null = null;
+let cachedJwtSecret: Uint8Array | null = null;
 
-async function getPublicKey(): Promise<KeyLike> {
-  if (cachedPublicKey) {
-    return cachedPublicKey;
+function getJwtSecret(): Uint8Array {
+  if (cachedJwtSecret) {
+    return cachedJwtSecret;
   }
 
-  const rawKey = process.env.PUBLIC_KEY;
-  if (!rawKey) {
-    throw new Error('PUBLIC_KEY is not set');
+  const rawSecret = process.env.JWT_SECRET;
+  if (!rawSecret) {
+    throw new Error('JWT_SECRET is not set');
   }
 
-  const normalizedKey = rawKey.replace(/\\n/g, '\n');
-  cachedPublicKey = await importSPKI(normalizedKey, 'RS256');
-  return cachedPublicKey;
+  cachedJwtSecret = new TextEncoder().encode(rawSecret);
+  return cachedJwtSecret;
 }
 
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
   try {
-    const publicKey = await getPublicKey();
-    const { payload } = await jwtVerify(token, publicKey, { algorithms: ['RS256'] });
+    const jwtSecret = getJwtSecret();
+    const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
     console.error('JWT verification failed', error);
