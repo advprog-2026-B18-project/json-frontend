@@ -75,9 +75,9 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-gray-100 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 text-center">Login</h1>
+    <main className="min-h-screen bg-[#FFD786]/20 flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-xl border border-[#519A66]/20 p-8">
+        <h1 className="text-2xl font-bold text-[#237227] text-center">Login</h1>
 
         <form className="mt-6 space-y-4" action={handleSubmit}>
           <div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
               placeholder="you@example.com"
             />
           </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
               placeholder="••••••••"
             />
           </div>
@@ -121,15 +121,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-[#237227] px-4 py-2 text-white font-semibold hover:bg-[#519A66] focus:outline-none focus:ring-2 focus:ring-[#519A66] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Loading...' : 'Login'}
+            {isSubmitting ? 'Memuat...' : 'Login'}
           </button>
         </form>
 
         <p className="mt-5 text-sm text-center text-gray-600">
           Belum punya akun?{' '}
-          <Link href="/register" className="text-blue-600 hover:underline font-medium">
+          <Link href="/register" className="text-[#237227] hover:underline font-medium">
             Daftar di sini
           </Link>
         </p>

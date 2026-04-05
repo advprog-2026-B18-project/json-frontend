@@ -32,7 +32,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [role, setRole] = useState<RegisterRole>('JASTIPER');
 
   const [passwordConfirmationError, setPasswordConfirmationError] = useState('');
   const [apiErrors, setApiErrors] = useState<string[]>([]);
@@ -60,8 +59,7 @@ export default function RegisterPage() {
     const submittedEmail = String(formData.get('email') ?? '');
     const submittedPassword = String(formData.get('password') ?? '');
     const submittedPasswordConfirmation = String(formData.get('password_confirmation') ?? '');
-    const submittedRoleRaw = String(formData.get('role') ?? role);
-    const submittedRole: RegisterRole = submittedRoleRaw === 'TITIPERS' ? 'TITIPERS' : 'JASTIPER';
+    const submittedRole: RegisterRole = 'TITIPERS';
 
     if (submittedPassword !== submittedPasswordConfirmation) {
       setPasswordConfirmationError('Password dan konfirmasi password harus sama.');
@@ -123,9 +121,9 @@ export default function RegisterPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-gray-100 p-8">
-          <h1 className="text-2xl font-bold text-gray-900 text-center">Register</h1>
+      <main className="min-h-screen bg-[#FFD786]/20 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-xl border border-[#519A66]/20 p-8">
+          <h1 className="text-2xl font-bold text-[#237227] text-center">Register</h1>
 
           <form className="mt-6 space-y-4" action={handleSubmit}>
             <div>
@@ -139,7 +137,7 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
                 placeholder="you@example.com"
               />
             </div>
@@ -155,7 +153,7 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
                 placeholder="••••••••"
               />
             </div>
@@ -176,7 +174,7 @@ export default function RegisterPage() {
                     setPasswordConfirmationError('');
                   }
                 }}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
                 placeholder="••••••••"
               />
               {passwordConfirmationError && (
@@ -184,34 +182,6 @@ export default function RegisterPage() {
                   {passwordConfirmationError}
                 </p>
               )}
-            </div>
-
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-2">Role</p>
-              <div className="flex items-center gap-5">
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="JASTIPER"
-                    checked={role === 'JASTIPER'}
-                    onChange={() => setRole('JASTIPER')}
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Jastiper
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="TITIPERS"
-                    checked={role === 'TITIPERS'}
-                    onChange={() => setRole('TITIPERS')}
-                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Titipers
-                </label>
-              </div>
             </div>
 
             {apiErrors.length > 0 && (
@@ -227,15 +197,15 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-lg bg-[#237227] px-4 py-2 text-white font-semibold hover:bg-[#519A66] focus:outline-none focus:ring-2 focus:ring-[#519A66] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? 'Loading...' : 'Register'}
+              {isSubmitting ? 'Memuat...' : 'Register'}
             </button>
           </form>
 
           <p className="mt-5 text-sm text-center text-gray-600">
             Sudah punya akun?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <Link href="/login" className="text-[#237227] hover:underline font-medium">
               Masuk di sini
             </Link>
           </p>
