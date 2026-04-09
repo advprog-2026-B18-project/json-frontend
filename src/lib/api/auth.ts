@@ -38,6 +38,16 @@ export type RegisterMessageResponse = {
   message?: string;
 };
 
+export type RefreshTokenSuccessResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+};
+
+export type RefreshTokenErrorResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   return apiFetch<LoginSuccessResponse>('/auth/login', {
     method: 'POST',
@@ -54,6 +64,13 @@ export async function register(input: {
   return apiFetch<RegisterSuccessResponse>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+export async function refreshToken(refresh_token: string): Promise<RefreshTokenSuccessResponse> {
+  return apiFetch<RefreshTokenSuccessResponse>('/auth/refresh-token', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token }),
   });
 }
 
