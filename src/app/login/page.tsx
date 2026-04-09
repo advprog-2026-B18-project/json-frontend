@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { isApiError } from '@/lib/api/client';
-import { login, setRefreshTokenCookie, type LoginErrorResponse } from '@/lib/api/auth';
+import { login, type LoginErrorResponse } from '@/lib/api/auth';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setAccessToken } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,7 +26,7 @@ export default function LoginPage() {
 
     try {
       const data = await login(submittedEmail, submittedPassword);
-      setRefreshTokenCookie(data.refresh_token);
+      setAccessToken(data.access_token);
       router.push('/');
       return;
     } catch (error) {

@@ -1,8 +1,7 @@
-import { apiFetch } from './client';
+import { apiFetch, appFetch } from './client';
 
 export type LoginSuccessResponse = {
   access_token: string;
-  refresh_token: string;
   expires_in: number;
   token_type: 'Bearer';
   user: {
@@ -40,7 +39,6 @@ export type RegisterMessageResponse = {
 
 export type RefreshTokenSuccessResponse = {
   access_token: string;
-  refresh_token: string;
   expires_in: number;
 };
 
@@ -57,7 +55,8 @@ export type LogoutErrorResponse = {
 };
 
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
-  return apiFetch<LoginSuccessResponse>('/auth/login', {
+  // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
+  return appFetch<LoginSuccessResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
@@ -75,28 +74,19 @@ export async function register(input: {
   });
 }
 
-export async function refreshToken(refresh_token: string): Promise<RefreshTokenSuccessResponse> {
-  return apiFetch<RefreshTokenSuccessResponse>('/auth/refresh-token', {
+export async function refreshToken(): Promise<RefreshTokenSuccessResponse> {
+  // Uses Next.js BFF route handler; refresh_token is read from HttpOnly cookie.
+  return appFetch<RefreshTokenSuccessResponse>('/api/auth/refresh-token', {
     method: 'POST',
-    body: JSON.stringify({ refresh_token }),
   });
 }
 
-export async function logout(input: {
-  accessToken: string;
-  refresh_token: string;
-}): Promise<LogoutSuccessResponse> {
-  return apiFetch<LogoutSuccessResponse>('/auth/logout', {
+export async function logout(accessToken: string): Promise<LogoutSuccessResponse> {
+  // Uses Next.js BFF route handler; refresh_token is read from HttpOnly cookie.
+  return appFetch<LogoutSuccessResponse>('/api/auth/logout', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${input.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ refresh_token: input.refresh_token }),
   });
-}
-
-export function setRefreshTokenCookie(refreshToken: string) {
-  const encoded = encodeURIComponent(refreshToken);
-  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `refresh_token=${encoded}; path=/; SameSite=Lax${secure}`;
 }

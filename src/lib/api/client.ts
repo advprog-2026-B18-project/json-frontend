@@ -76,6 +76,27 @@ export async function apiFetchFrom<T>(
   return body as T;
 }
 
+export async function appFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(endpoint, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options?.headers ?? {}),
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const body = await tryReadJson(res);
+    const maybeBody = body as ApiErrorBody | null;
+    const message = maybeBody?.message ?? `Request gagal (HTTP ${res.status}).`;
+    throw new ApiError(res.status, message, body);
+  }
+
+  const body = await tryReadJson(res);
+  return body as T;
+}
+
 // Backward-compatible default: auth service
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   return apiFetchFrom<T>('auth', endpoint, options);
