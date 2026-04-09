@@ -48,6 +48,14 @@ export type RefreshTokenErrorResponse = {
   message?: string;
 };
 
+export type LogoutSuccessResponse = {
+  message: string;
+};
+
+export type LogoutErrorResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   return apiFetch<LoginSuccessResponse>('/auth/login', {
     method: 'POST',
@@ -71,6 +79,19 @@ export async function refreshToken(refresh_token: string): Promise<RefreshTokenS
   return apiFetch<RefreshTokenSuccessResponse>('/auth/refresh-token', {
     method: 'POST',
     body: JSON.stringify({ refresh_token }),
+  });
+}
+
+export async function logout(input: {
+  accessToken: string;
+  refresh_token: string;
+}): Promise<LogoutSuccessResponse> {
+  return apiFetch<LogoutSuccessResponse>('/auth/logout', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+    },
+    body: JSON.stringify({ refresh_token: input.refresh_token }),
   });
 }
 
