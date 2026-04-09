@@ -4,23 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-type LoginSuccessResponse = {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: 'Bearer';
-  user: {
-    user_id: string | number;
-    email: string;
-    role: string;
-    username: string;
-    status: string;
-  };
-};
-
-type LoginErrorResponse = {
-  message?: string;
-};
+import { isApiError } from '@/lib/api/client';
+import { login, setRefreshTokenCookie, type LoginErrorResponse } from '@/lib/api/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,49 +20,38 @@ export default function LoginPage() {
     const submittedEmail = String(formData.get('email') ?? '');
     const submittedPassword = String(formData.get('password') ?? '');
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
-    if (!baseUrl) {
-      setErrorMessage('Konfigurasi API auth belum tersedia.');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${baseUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: submittedEmail, password: submittedPassword }),
-      });
+      const data = await login(submittedEmail, submittedPassword);
+      setRefreshTokenCookie(data.refresh_token);
+      router.push('/');
+      return;
+    } catch (error) {
+      if (isApiError(error)) {
+        if (error.status === 401 || error.status === 403) {
+          const body = error.body as LoginErrorResponse | null;
+          setErrorMessage(body?.message ?? 'Login gagal.');
+          return;
+        }
 
-      if (response.status === 200) {
-        const data = (await response.json()) as LoginSuccessResponse;
-        document.cookie = `refresh_token=${encodeURIComponent(data.refresh_token)}; path=/; SameSite=Lax`;
-        router.push('/');
+        const body = error.body as LoginErrorResponse | null;
+        setErrorMessage(body?.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
         return;
       }
 
-      if (response.status === 401 || response.status === 403) {
-        const data = (await response.json()) as LoginErrorResponse;
-        setErrorMessage(data.message ?? 'Login gagal.');
-        return;
-      }
-
-      const data = (await response.json().catch(() => null)) as LoginErrorResponse | null;
-      setErrorMessage(data?.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
-    } catch {
-      setErrorMessage('Tidak dapat terhubung ke server.');
+      setErrorMessage(error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#FFD786]/20 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-xl border border-[#519A66]/20 p-8">
-        <h1 className="text-2xl font-bold text-[#237227] text-center">Login</h1>
+    <main className="min-h-screen bg-gradient-to-br from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/95 p-8 shadow-lg backdrop-blur">
+        <h1 className="text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] bg-clip-text text-transparent">
+          Login
+        </h1>
 
         <form className="mt-6 space-y-4" action={handleSubmit}>
           <div>
@@ -121,7 +95,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-[#237227] px-4 py-2 text-white font-semibold hover:bg-[#519A66] focus:outline-none focus:ring-2 focus:ring-[#519A66] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] px-4 py-2 text-white font-semibold shadow-sm hover:from-[color:var(--color-primary)] hover:to-[color:var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? 'Memuat...' : 'Login'}
           </button>

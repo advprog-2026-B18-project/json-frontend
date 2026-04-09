@@ -4,25 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-type RegisterRole = 'JASTIPER' | 'TITIPERS';
-
-type RegisterSuccessResponse = {
-  user_id: string | number;
-  email: string;
-  role: RegisterRole;
-  created_at: string;
-};
-
-type RegisterErrorListResponse = {
-  errors?: Array<{
-    field: string;
-    message: string;
-  }>;
-};
-
-type RegisterMessageResponse = {
-  message?: string;
-};
+import { isApiError } from '@/lib/api/client';
+import {
+  register,
+  type RegisterErrorListResponse,
+  type RegisterMessageResponse,
+  type RegisterRole,
+} from '@/lib/api/auth';
 
 const SUCCESS_REDIRECT_DELAY = 2500;
 
@@ -66,54 +54,41 @@ export default function RegisterPage() {
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
-    if (!baseUrl) {
-      setApiErrors(['Konfigurasi API auth belum tersedia.']);
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${baseUrl}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: submittedEmail,
-          password: submittedPassword,
-          password_confirmation: submittedPasswordConfirmation,
-          role: submittedRole,
-        }),
+      await register({
+        email: submittedEmail,
+        password: submittedPassword,
+        password_confirmation: submittedPasswordConfirmation,
+        role: submittedRole,
       });
+      setShowSuccessModal(true);
+      return;
+    } catch (error) {
+      if (isApiError(error)) {
+        if (error.status === 400 || error.status === 422) {
+          const data = error.body as RegisterErrorListResponse | null;
+          const messages = (data?.errors ?? [])
+            .map((item) => item.message)
+            .filter((message) => Boolean(message));
 
-      if (response.status === 200) {
-        await response.json().catch(() => null as RegisterSuccessResponse | null);
-        setShowSuccessModal(true);
+          setApiErrors(messages.length > 0 ? messages : ['Registrasi gagal.']);
+          return;
+        }
+
+        if (error.status === 409) {
+          const data = error.body as RegisterMessageResponse | null;
+          setApiErrors([data?.message ?? 'Email already registered']);
+          return;
+        }
+
+        const fallbackData = error.body as RegisterMessageResponse | null;
+        setApiErrors([fallbackData?.message ?? 'Terjadi kesalahan. Silakan coba lagi.']);
         return;
       }
 
-      if (response.status === 400 || response.status === 422) {
-        const data = (await response.json().catch(() => null)) as RegisterErrorListResponse | null;
-        const messages = (data?.errors ?? [])
-          .map((error) => error.message)
-          .filter((message) => Boolean(message));
-
-        setApiErrors(messages.length > 0 ? messages : ['Registrasi gagal.']);
-        return;
-      }
-
-      if (response.status === 409) {
-        const data = (await response.json().catch(() => null)) as RegisterMessageResponse | null;
-        setApiErrors([data?.message ?? 'Email already registered']);
-        return;
-      }
-
-      const fallbackData = (await response.json().catch(() => null)) as RegisterMessageResponse | null;
-      setApiErrors([fallbackData?.message ?? 'Terjadi kesalahan. Silakan coba lagi.']);
-    } catch {
-      setApiErrors(['Tidak dapat terhubung ke server.']);
+      setApiErrors([error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.']);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,9 +96,11 @@ export default function RegisterPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-[#FFD786]/20 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white rounded-xl border border-[#519A66]/20 p-8">
-          <h1 className="text-2xl font-bold text-[#237227] text-center">Register</h1>
+      <main className="min-h-screen bg-gradient-to-br from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/95 p-8 shadow-lg backdrop-blur">
+          <h1 className="text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] bg-clip-text text-transparent">
+            Register
+          </h1>
 
           <form className="mt-6 space-y-4" action={handleSubmit}>
             <div>
@@ -197,7 +174,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-[#237227] px-4 py-2 text-white font-semibold hover:bg-[#519A66] focus:outline-none focus:ring-2 focus:ring-[#519A66] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-lg bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] px-4 py-2 text-white font-semibold shadow-sm hover:from-[color:var(--color-primary)] hover:to-[color:var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Memuat...' : 'Register'}
             </button>
