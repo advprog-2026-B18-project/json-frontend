@@ -3,6 +3,8 @@ export type ApiErrorBody = {
   errors?: Array<{ field?: string; message?: string }>;
 };
 
+export type ApiService = 'auth' | 'payment' | 'inventory' | 'orders';
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -15,13 +17,21 @@ export class ApiError extends Error {
   }
 }
 
-function getBaseUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
+function getBaseUrlFor(service: ApiService): string {
+  const envKeyByService: Record<ApiService, string> = {
+    auth: 'NEXT_PUBLIC_API_AUTH',
+    payment: 'NEXT_PUBLIC_API_PAYMENT',
+    inventory: 'NEXT_PUBLIC_API_INVENTORY',
+    orders: 'NEXT_PUBLIC_API_ORDERS',
+  };
+
+  const envKey = envKeyByService[service];
+  const baseUrl = process.env[envKey];
   if (!baseUrl) {
-    throw new Error('Konfigurasi API auth belum tersedia.');
+    throw new Error(`Konfigurasi API ${service} belum tersedia (butuh ${envKey}).`);
   }
 
-  return baseUrl;
+  return String(baseUrl);
 }
 
 async function tryReadJson(response: Response): Promise<unknown | null> {
@@ -41,8 +51,12 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
-export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const baseUrl = getBaseUrl();
+export async function apiFetchFrom<T>(
+  service: ApiService,
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
+  const baseUrl = getBaseUrlFor(service);
   const res = await fetch(`${baseUrl}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -61,3 +75,16 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
   const body = await tryReadJson(res);
   return body as T;
 }
+
+// Backward-compatible default: auth service
+export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  return apiFetchFrom<T>('auth', endpoint, options);
+}
+
+// Convenience helpers for pages
+export const authFetch = <T>(endpoint: string, options?: RequestInit) => apiFetchFrom<T>('auth', endpoint, options);
+export const paymentFetch = <T>(endpoint: string, options?: RequestInit) =>
+  apiFetchFrom<T>('payment', endpoint, options);
+export const inventoryFetch = <T>(endpoint: string, options?: RequestInit) =>
+  apiFetchFrom<T>('inventory', endpoint, options);
+export const ordersFetch = <T>(endpoint: string, options?: RequestInit) => apiFetchFrom<T>('orders', endpoint, options);
