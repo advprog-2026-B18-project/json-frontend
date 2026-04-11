@@ -218,6 +218,41 @@ export type AdminKycNotFoundResponse = {
   message?: string;
 };
 
+export type ReviewKycAction = 'APPROVE' | 'REJECT';
+
+export type ReviewKycInput = {
+  action: ReviewKycAction;
+  rejection_reason?: string;
+};
+
+export type ReviewKycApproveResponse = {
+  kyc_id: string | number;
+  status: 'APPROVED';
+  user: {
+    user_id: string | number;
+    role: 'JASTIPER';
+  };
+  reviewed_at: string;
+};
+
+export type ReviewKycRejectResponse = {
+  kyc_id: string | number;
+  status: 'REJECTED';
+  rejection_reason: string;
+  reviewed_at: string;
+};
+
+export type ReviewKycValidationErrorResponse = {
+  errors?: Array<{
+    field: string;
+    message: string;
+  }>;
+};
+
+export type ReviewKycConflictResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -353,4 +388,21 @@ export async function getAdminKycDetail(
       Authorization: `Bearer ${accessToken}`,
     },
   });
+}
+
+export async function reviewAdminKyc(
+  accessToken: string,
+  kycId: string | number,
+  input: ReviewKycInput
+): Promise<ReviewKycApproveResponse | ReviewKycRejectResponse> {
+  return apiFetch<ReviewKycApproveResponse | ReviewKycRejectResponse>(
+    `/admin/kyc/${encodeURIComponent(String(kycId))}/review`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(input),
+    }
+  );
 }
