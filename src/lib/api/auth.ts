@@ -169,6 +169,32 @@ export type GetMyKycStatusNotFoundResponse = {
   message?: string;
 };
 
+export type AdminKycStatusFilter = 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED';
+
+export type AdminKycListItem = {
+  kyc_id: string | number;
+  user_id: string | number;
+  username: string;
+  full_name_ktp: string;
+  status: AdminKycStatusFilter;
+  submitted_at: string;
+};
+
+export type AdminKycListPagination = {
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export type AdminKycListResponse = {
+  data: AdminKycListItem[];
+  pagination: AdminKycListPagination;
+};
+
+export type AdminKycAccessDeniedResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -255,6 +281,38 @@ export async function submitKyc(
 
 export async function getMyKycStatus(accessToken: string): Promise<GetMyKycStatusSuccessResponse> {
   return apiFetch<GetMyKycStatusSuccessResponse>('/profile/me/kyc', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+export async function getAdminKycList(
+  accessToken: string,
+  params?: {
+    status?: AdminKycStatusFilter;
+    page?: number;
+    limit?: number;
+  }
+): Promise<AdminKycListResponse> {
+  const query = new URLSearchParams();
+
+  if (params?.status) {
+    query.set('status', params.status);
+  }
+
+  if (params?.page !== undefined) {
+    query.set('page', String(params.page));
+  }
+
+  if (params?.limit !== undefined) {
+    query.set('limit', String(params.limit));
+  }
+
+  const queryString = query.toString();
+
+  return apiFetch<AdminKycListResponse>(`/admin/kyc${queryString ? `?${queryString}` : ''}`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`,
