@@ -126,6 +126,37 @@ export type PublicProfileNotFoundResponse = {
   message?: string;
 };
 
+export type KycSocialMediaLink = {
+  platform: string;
+  url: string;
+};
+
+export type SubmitKycInput = {
+  full_name_ktp: string;
+  ktp_number: string;
+  ktp_photo_url: string;
+  selfie_with_ktp_url: string;
+  social_media_links: KycSocialMediaLink[];
+  bio?: string;
+};
+
+export type SubmitKycSuccessResponse = {
+  kyc_id: string | number;
+  status: 'PENDING_VERIFICATION';
+  submitted_at: string;
+};
+
+export type SubmitKycErrorResponse = {
+  message?: string;
+};
+
+export type SubmitKycValidationErrorResponse = {
+  errors?: Array<{
+    field: string;
+    message: string;
+  }>;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -194,5 +225,18 @@ export async function getPublicProfile(
     headers: {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
+  });
+}
+
+export async function submitKyc(
+  accessToken: string,
+  input: SubmitKycInput
+): Promise<SubmitKycSuccessResponse> {
+  return apiFetch<SubmitKycSuccessResponse>('/profile/me/kyc', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(input),
   });
 }
