@@ -157,6 +157,18 @@ export type SubmitKycValidationErrorResponse = {
   }>;
 };
 
+export type GetMyKycStatusSuccessResponse = {
+  kyc_id: string | number;
+  status: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED';
+  submitted_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+};
+
+export type GetMyKycStatusNotFoundResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -238,5 +250,14 @@ export async function submitKyc(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(input),
+  });
+}
+
+export async function getMyKycStatus(accessToken: string): Promise<GetMyKycStatusSuccessResponse> {
+  return apiFetch<GetMyKycStatusSuccessResponse>('/profile/me/kyc', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 }
