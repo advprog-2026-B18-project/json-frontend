@@ -323,6 +323,33 @@ export type AdminUserNotFoundResponse = {
   message?: string;
 };
 
+export type AdminUserStatusAction = 'BAN' | 'UNBAN' | 'DEMOTE_TO_TITIPERS';
+
+export type AdminUserStatusUpdateInput = {
+  action: AdminUserStatusAction;
+  reason: string;
+};
+
+export type AdminUserStatusUpdateResponse = {
+  user_id: string | number;
+  username: string;
+  role: string;
+  status: string;
+  updated_at: string;
+  action_by: string | number;
+};
+
+export type AdminUserStatusBadRequestResponse = {
+  errors?: Array<{
+    field: string;
+    message: string;
+  }>;
+};
+
+export type AdminUserStatusForbiddenResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -538,5 +565,19 @@ export async function getAdminUserDetail(
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
+  });
+}
+
+export async function updateAdminUserStatus(
+  accessToken: string,
+  userId: string | number,
+  input: AdminUserStatusUpdateInput
+): Promise<AdminUserStatusUpdateResponse> {
+  return apiFetch<AdminUserStatusUpdateResponse>(`/admin/users/${encodeURIComponent(String(userId))}/status`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(input),
   });
 }
