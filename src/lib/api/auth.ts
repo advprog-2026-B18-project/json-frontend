@@ -54,6 +54,23 @@ export type LogoutErrorResponse = {
   message?: string;
 };
 
+export type MeProfileSuccessResponse = {
+  user_id: string | number;
+  email: string;
+  username: string;
+  full_name: string;
+  role: string;
+  status: string;
+  profile_picture_url: string | null;
+  phone_number: string | null;
+  created_at: string;
+  kyc_status?: string;
+};
+
+export type MeProfileErrorResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -85,6 +102,15 @@ export async function logout(accessToken: string): Promise<LogoutSuccessResponse
   // Uses Next.js BFF route handler; refresh_token is read from HttpOnly cookie.
   return appFetch<LogoutSuccessResponse>('/api/auth/logout', {
     method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+export async function getMyProfile(accessToken: string): Promise<MeProfileSuccessResponse> {
+  return apiFetch<MeProfileSuccessResponse>('/profile/me', {
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
