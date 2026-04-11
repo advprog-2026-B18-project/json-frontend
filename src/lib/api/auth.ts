@@ -98,6 +98,34 @@ export type UpdateMyProfileValidationErrorResponse = {
   }>;
 };
 
+export type PublicProfileBaseResponse = {
+  user_id: string | number;
+  username: string;
+  full_name: string;
+  profile_picture_url: string | null;
+  member_since: string;
+};
+
+export type PublicTitipersProfileResponse = PublicProfileBaseResponse & {
+  role: 'TITIPERS';
+  status: string;
+};
+
+export type PublicJastiperProfileResponse = PublicProfileBaseResponse & {
+  role: 'JASTIPER';
+  stats: {
+    total_orders: number;
+    success_rate: number;
+    avg_rating: number;
+  };
+  rating: number;
+  badges: string[];
+};
+
+export type PublicProfileNotFoundResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -154,5 +182,17 @@ export async function updateMyProfile(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(input),
+  });
+}
+
+export async function getPublicProfile(
+  username: string,
+  accessToken?: string
+): Promise<PublicTitipersProfileResponse | PublicJastiperProfileResponse> {
+  return apiFetch<PublicTitipersProfileResponse | PublicJastiperProfileResponse>(`/profile/${encodeURIComponent(username)}`, {
+    method: 'GET',
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
 }
