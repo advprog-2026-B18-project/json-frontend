@@ -287,6 +287,42 @@ export type AdminUserAccessDeniedResponse = {
   message?: string;
 };
 
+export type AdminUserKycInfo = {
+  kyc_id?: string | number;
+  status?: string;
+  submitted_at?: string;
+  reviewed_at?: string | null;
+  rejection_reason?: string | null;
+};
+
+export type AdminUserTransactionStats = {
+  total_orders?: number;
+  successful_orders?: number;
+  canceled_orders?: number;
+  total_spent?: number;
+  total_earned?: number;
+  success_rate?: number;
+  avg_rating?: number;
+};
+
+export type AdminUserDetailResponse = {
+  user_id: string | number;
+  email: string;
+  username: string;
+  full_name: string;
+  role: string;
+  status: string;
+  phone_number: string | null;
+  profile_picture_url: string | null;
+  created_at: string;
+  kyc_info?: AdminUserKycInfo | null;
+  transaction_stats?: AdminUserTransactionStats | null;
+};
+
+export type AdminUserNotFoundResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -486,6 +522,18 @@ export async function getAdminUsers(
   const queryString = query.toString();
 
   return apiFetch<AdminUserListResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+export async function getAdminUserDetail(
+  accessToken: string,
+  userId: string | number
+): Promise<AdminUserDetailResponse> {
+  return apiFetch<AdminUserDetailResponse>(`/admin/users/${encodeURIComponent(String(userId))}`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`,
