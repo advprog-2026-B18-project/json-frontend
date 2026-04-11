@@ -195,6 +195,29 @@ export type AdminKycAccessDeniedResponse = {
   message?: string;
 };
 
+export type AdminKycUserSummary = {
+  user_id: string | number;
+  email: string;
+  username: string;
+};
+
+export type AdminKycDetailResponse = {
+  kyc_id: string | number;
+  user: AdminKycUserSummary;
+  full_name_ktp: string;
+  ktp_number: string;
+  ktp_photo_url: string;
+  selfie_with_ktp_url: string;
+  social_media_links: KycSocialMediaLink[];
+  bio: string | null;
+  status: AdminKycStatusFilter;
+  submitted_at: string;
+};
+
+export type AdminKycNotFoundResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -313,6 +336,18 @@ export async function getAdminKycList(
   const queryString = query.toString();
 
   return apiFetch<AdminKycListResponse>(`/admin/kyc${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+export async function getAdminKycDetail(
+  accessToken: string,
+  kycId: string | number
+): Promise<AdminKycDetailResponse> {
+  return apiFetch<AdminKycDetailResponse>(`/admin/kyc/${encodeURIComponent(String(kycId))}`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`,
