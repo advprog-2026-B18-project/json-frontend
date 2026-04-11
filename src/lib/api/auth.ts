@@ -253,6 +253,40 @@ export type ReviewKycConflictResponse = {
   message?: string;
 };
 
+export type AdminUserStatusFilter = 'ACTIVE' | 'BANNED' | 'PENDING_VERIFICATION';
+
+export type AdminUserRoleFilter = 'TITIPERS' | 'JASTIPER' | 'ADMIN';
+
+export type AdminUserSortBy = 'created_at' | 'username';
+
+export type AdminUserSortOrder = 'asc' | 'desc';
+
+export type AdminUserListItem = {
+  user_id: string | number;
+  email: string;
+  username: string;
+  full_name: string;
+  role: AdminUserRoleFilter;
+  status: AdminUserStatusFilter;
+  created_at: string;
+};
+
+export type AdminUserListPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+};
+
+export type AdminUserListResponse = {
+  data: AdminUserListItem[];
+  pagination: AdminUserListPagination;
+};
+
+export type AdminUserAccessDeniedResponse = {
+  message?: string;
+};
+
 export async function login(email: string, password: string): Promise<LoginSuccessResponse> {
   // Uses Next.js BFF route handler; refresh_token is stored as HttpOnly cookie.
   return appFetch<LoginSuccessResponse>('/api/auth/login', {
@@ -405,4 +439,56 @@ export async function reviewAdminKyc(
       body: JSON.stringify(input),
     }
   );
+}
+
+export async function getAdminUsers(
+  accessToken: string,
+  params?: {
+    status?: AdminUserStatusFilter;
+    role?: AdminUserRoleFilter;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort_by?: AdminUserSortBy;
+    order?: AdminUserSortOrder;
+  }
+): Promise<AdminUserListResponse> {
+  const query = new URLSearchParams();
+
+  if (params?.status) {
+    query.set('status', params.status);
+  }
+
+  if (params?.role) {
+    query.set('role', params.role);
+  }
+
+  if (params?.search) {
+    query.set('search', params.search);
+  }
+
+  if (params?.page !== undefined) {
+    query.set('page', String(params.page));
+  }
+
+  if (params?.limit !== undefined) {
+    query.set('limit', String(params.limit));
+  }
+
+  if (params?.sort_by) {
+    query.set('sort_by', params.sort_by);
+  }
+
+  if (params?.order) {
+    query.set('order', params.order);
+  }
+
+  const queryString = query.toString();
+
+  return apiFetch<AdminUserListResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 }
