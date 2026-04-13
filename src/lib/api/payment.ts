@@ -61,6 +61,29 @@ export type CreateTopUpTransactionConflictResponse = {
   existing_transaction_id?: string | number;
 };
 
+export type ConfirmTopUpSuccessResponse = {
+  transaction_id: string | number;
+  status: 'SUCCESS';
+  amount: number;
+  new_balance: number;
+  confirmed_at: string;
+};
+
+export type ConfirmTopUpBadRequestResponse = {
+  message?: string;
+  expected?: number;
+  received?: number;
+};
+
+export type ConfirmTopUpConflictResponse = {
+  message?: string;
+  status?: 'SUCCESS';
+};
+
+export type ConfirmTopUpAuth =
+  | { accessToken: string; serviceKey?: never }
+  | { serviceKey: string; accessToken?: never };
+
 export async function getMyWallet(accessToken: string): Promise<GetMyWalletSuccessResponse> {
   return paymentFetch<GetMyWalletSuccessResponse>('/wallet/me', {
     method: 'GET',
@@ -105,9 +128,28 @@ export async function createTopUpTransaction(
   });
 }
 
+export async function confirmTopUpTransaction(
+  transactionId: string,
+  auth: ConfirmTopUpAuth
+): Promise<ConfirmTopUpSuccessResponse> {
+  const headers: HeadersInit =
+    'accessToken' in auth
+      ? { Authorization: `Bearer ${auth.accessToken}` }
+      : { 'X-Service-Key': auth.serviceKey };
+
+  return paymentFetch<ConfirmTopUpSuccessResponse>(
+    `/wallet/topup/${encodeURIComponent(transactionId)}/confirm`,
+    {
+      method: 'POST',
+      headers,
+    }
+  );
+}
+
 export const paymentApi = {
   fetch: paymentFetch,
   getMyWallet,
   getAdminWalletByUserId,
   createTopUpTransaction,
+  confirmTopUpTransaction,
 };
