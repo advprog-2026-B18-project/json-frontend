@@ -229,6 +229,61 @@ export type GetWalletTransactionsSuccessResponse = {
   summary: WalletTransactionsSummary;
 };
 
+export type GetAdminWalletTransactionsParams = {
+  user_id?: string;
+  type?: WalletTransactionType;
+  status?: WalletTransactionStatus;
+  date_from?: string;
+  date_to?: string;
+  min_amount?: number;
+  page?: number;
+  limit?: number;
+};
+
+export type AdminWalletTransactionUser = {
+  user_id: string | number;
+  username: string;
+  role: string;
+};
+
+export type AdminWalletTransactionItem = {
+  transaction_id: string | number;
+  type: WalletTransactionType;
+  amount: number;
+  direction: WalletTransactionDirection;
+  status: WalletTransactionStatus;
+  user: AdminWalletTransactionUser;
+  description: string;
+  reference_id: string | number | null;
+  created_at: string;
+};
+
+export type AdminWalletTransactionsPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+};
+
+export type AdminWalletTransactionsSummary = {
+  total_topup: number;
+  total_withdrawal: number;
+  total_payment: number;
+  total_refund: number;
+  total_earning: number;
+  platform_escrow_balance: number;
+};
+
+export type GetAdminWalletTransactionsSuccessResponse = {
+  data: AdminWalletTransactionItem[];
+  pagination: AdminWalletTransactionsPagination;
+  summary: AdminWalletTransactionsSummary;
+};
+
+export type GetAdminWalletTransactionsForbiddenResponse = {
+  message?: string;
+};
+
 export async function getMyWallet(accessToken: string): Promise<GetMyWalletSuccessResponse> {
   return paymentFetch<GetMyWalletSuccessResponse>('/wallet/me', {
     method: 'GET',
@@ -386,6 +441,57 @@ export async function getWalletTransactions(
   );
 }
 
+export async function getAdminWalletTransactions(
+  accessToken: string,
+  params?: GetAdminWalletTransactionsParams
+): Promise<GetAdminWalletTransactionsSuccessResponse> {
+  const query = new URLSearchParams();
+
+  if (params?.user_id) {
+    query.set('user_id', params.user_id);
+  }
+
+  if (params?.type) {
+    query.set('type', params.type);
+  }
+
+  if (params?.status) {
+    query.set('status', params.status);
+  }
+
+  if (params?.date_from) {
+    query.set('date_from', params.date_from);
+  }
+
+  if (params?.date_to) {
+    query.set('date_to', params.date_to);
+  }
+
+  if (params?.min_amount !== undefined) {
+    query.set('min_amount', String(params.min_amount));
+  }
+
+  if (params?.page !== undefined) {
+    query.set('page', String(params.page));
+  }
+
+  if (params?.limit !== undefined) {
+    query.set('limit', String(params.limit));
+  }
+
+  const queryString = query.toString();
+
+  return paymentFetch<GetAdminWalletTransactionsSuccessResponse>(
+    `/admin/wallets/transactions${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
 export const paymentApi = {
   fetch: paymentFetch,
   getMyWallet,
@@ -395,4 +501,5 @@ export const paymentApi = {
   createWithdrawal,
   processWithdrawal,
   getWalletTransactions,
+  getAdminWalletTransactions,
 };
