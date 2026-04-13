@@ -84,6 +84,51 @@ export type ConfirmTopUpAuth =
   | { accessToken: string; serviceKey?: never }
   | { serviceKey: string; accessToken?: never };
 
+export type CreateWithdrawalInput = {
+  amount: number;
+  bank_account_id: string;
+  idempotency_key: string;
+  notes?: string;
+};
+
+export type WithdrawalBankAccountSummary = {
+  bank_name: string;
+  account_number_masked: string;
+  account_name: string;
+};
+
+export type CreateWithdrawalSuccessResponse = {
+  transaction_id: string | number;
+  type: 'WITHDRAWAL';
+  amount: number;
+  status: 'PENDING';
+  bank_account: WithdrawalBankAccountSummary;
+  estimated_arrival: string;
+  created_at: string;
+};
+
+export type CreateWithdrawalBadRequestResponse = {
+  errors?: Array<{
+    field: 'amount' | 'bank_account_id' | 'idempotency_key' | 'notes';
+    message: string;
+  }>;
+};
+
+export type CreateWithdrawalConflictResponse = {
+  message?: string;
+  existing_transaction_id?: string | number;
+};
+
+export type CreateWithdrawalUnprocessableResponse =
+  | {
+      message: 'Insufficient withdrawable balance';
+      withdrawable: number;
+      requested: number;
+    }
+  | {
+      message: 'Bank account not found or not verified';
+    };
+
 export async function getMyWallet(accessToken: string): Promise<GetMyWalletSuccessResponse> {
   return paymentFetch<GetMyWalletSuccessResponse>('/wallet/me', {
     method: 'GET',
@@ -146,10 +191,32 @@ export async function confirmTopUpTransaction(
   );
 }
 
+export async function createWithdrawal(
+  accessToken: string,
+  input: CreateWithdrawalInput
+): Promise<CreateWithdrawalSuccessResponse> {
+  if (input.amount < 50_000) {
+    throw new Error('Minimum withdrawal adalah Rp 50.000.');
+  }
+
+  if (input.notes && input.notes.length > 200) {
+    throw new Error('Catatan maksimal 200 karakter.');
+  }
+
+  return paymentFetch<CreateWithdrawalSuccessResponse>('/wallet/withdraw', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(input),
+  });
+}
+
 export const paymentApi = {
   fetch: paymentFetch,
   getMyWallet,
   getAdminWalletByUserId,
   createTopUpTransaction,
   confirmTopUpTransaction,
+  createWithdrawal,
 };
