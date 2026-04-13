@@ -313,6 +313,40 @@ export type GetAdminWalletTransactionsForbiddenResponse = {
   message?: string;
 };
 
+export type ManualAdjustmentDirection = 'CREDIT' | 'DEBIT';
+
+export type CreateManualWalletAdjustmentInput = {
+  direction: ManualAdjustmentDirection;
+  amount: number;
+  reason: string;
+  reference_id?: string;
+};
+
+export type CreateManualWalletAdjustmentSuccessResponse = {
+  transaction_id: string | number;
+  type: 'ADJUSTMENT';
+  user_id: string | number;
+  direction: ManualAdjustmentDirection;
+  amount: number;
+  new_balance: number;
+  reason: string;
+  adjusted_by: string | number;
+  created_at: string;
+};
+
+export type CreateManualWalletAdjustmentBadRequestResponse = {
+  errors?: Array<{
+    field: 'direction' | 'amount' | 'reason' | 'reference_id';
+    message: string;
+  }>;
+};
+
+export type CreateManualWalletAdjustmentUnprocessableResponse = {
+  message?: 'Adjustment would result in negative balance' | string;
+  current_balance?: number;
+  debit_amount?: number;
+};
+
 export async function getMyWallet(accessToken: string): Promise<GetMyWalletSuccessResponse> {
   return paymentFetch<GetMyWalletSuccessResponse>('/wallet/me', {
     method: 'GET',
@@ -536,6 +570,35 @@ export async function getAdminWalletTransactions(
   );
 }
 
+export async function createManualWalletAdjustment(
+  accessToken: string,
+  userId: string,
+  input: CreateManualWalletAdjustmentInput
+): Promise<CreateManualWalletAdjustmentSuccessResponse> {
+  if (input.amount <= 0) {
+    throw new Error('amount harus bernilai positif.');
+  }
+
+  if (!input.reason.trim()) {
+    throw new Error('reason wajib diisi.');
+  }
+
+  if (input.reason.length > 500) {
+    throw new Error('reason maksimal 500 karakter.');
+  }
+
+  return paymentFetch<CreateManualWalletAdjustmentSuccessResponse>(
+    `/admin/wallets/${encodeURIComponent(userId)}/adjust`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 export const paymentApi = {
   fetch: paymentFetch,
   getMyWallet,
@@ -547,4 +610,5 @@ export const paymentApi = {
   getWalletTransactions,
   getWalletTransactionById,
   getAdminWalletTransactions,
+  createManualWalletAdjustment,
 };
