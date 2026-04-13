@@ -229,6 +229,35 @@ export type GetWalletTransactionsSuccessResponse = {
   summary: WalletTransactionsSummary;
 };
 
+export type WalletTransactionReferenceType = 'ORDER' | 'TOPUP' | 'WITHDRAWAL' | null;
+
+export type WalletTransactionDetailResponse = {
+  transaction_id: string | number;
+  type: WalletTransactionType;
+  amount: number;
+  direction: WalletTransactionDirection;
+  status: WalletTransactionStatus;
+  description: string;
+  balance_before: number;
+  balance_after: number;
+  reference_id: string | number | null;
+  reference_type: WalletTransactionReferenceType;
+  payment_method: TopUpPaymentMethod | string | null;
+  payment_instruction: string | Record<string, unknown> | null;
+  payment_reference: string | null;
+  confirmed_by: string | number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WalletTransactionDetailForbiddenResponse = {
+  message?: string;
+};
+
+export type WalletTransactionDetailNotFoundResponse = {
+  message?: string;
+};
+
 export type GetAdminWalletTransactionsParams = {
   user_id?: string;
   type?: WalletTransactionType;
@@ -441,6 +470,21 @@ export async function getWalletTransactions(
   );
 }
 
+export async function getWalletTransactionById(
+  accessToken: string,
+  transactionId: string
+): Promise<WalletTransactionDetailResponse> {
+  return paymentFetch<WalletTransactionDetailResponse>(
+    `/wallet/transactions/${encodeURIComponent(transactionId)}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+}
+
 export async function getAdminWalletTransactions(
   accessToken: string,
   params?: GetAdminWalletTransactionsParams
@@ -501,5 +545,6 @@ export const paymentApi = {
   createWithdrawal,
   processWithdrawal,
   getWalletTransactions,
+  getWalletTransactionById,
   getAdminWalletTransactions,
 };
