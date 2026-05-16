@@ -67,8 +67,8 @@
 ## Module 2: Inventory and Catalog
 
 ### Phase 1: Setup and Models
-- [ ] TASK-201: Define TypeScript types for Inventory Service responses: ProductResponse (camelCase), CategoryResponse (snake_case), PaginatedProductResponse, StockReservationResponse. NOTE: Inventory service pagination shape is `{ page, limit, total, total_pages }` (uses "total" not "total_items"). Order service pagination shape is `{ total_items, page, limit, total_pages }` (uses "total_items"). These are two different shapes — define separate pagination types for each service. | Est: 1h
-- [ ] TASK-202: Note and document the camelCase/snake_case inconsistency: ProductResponse uses camelCase (productId, originCountry), CategoryResponse uses snake_case (category_id, product_count) | Est: 0.5h
+- [x] TASK-201: Define TypeScript types for Inventory Service responses: ProductResponse (camelCase), CategoryResponse (snake_case), PaginatedProductResponse, StockReservationResponse. NOTE: Inventory service pagination shape is `{ page, limit, total, total_pages }` (uses "total" not "total_items"). Order service pagination shape is `{ total_items, page, limit, total_pages }` (uses "total_items"). These are two different shapes — define separate pagination types for each service. | Est: 1h
+- [x] TASK-202: Note and document the camelCase/snake_case inconsistency: ProductResponse uses camelCase (productId, originCountry), CategoryResponse uses snake_case (category_id, product_count) | Est: 0.5h
 
 ### Phase 2: Service Layer
 - [ ] TASK-203: Implement src/services/inventory.service.ts — getCategories() GET /categories | Est: 0.5h
