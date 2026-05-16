@@ -105,24 +105,24 @@
 ## Module 3: Order Management
 
 ### Phase 1: Setup and Models
-- [ ] TASK-301: Define TypeScript types for Order Service responses: Order, ShippingAddress, ProductSnapshot, OrderHistory, JastiperRating, ProductRating, PaginatedOrderResponse. NOTE: `cancelled_by` in Order is a role string (`"TITIPERS" | "JASTIPER" | "ADMIN" | "SYSTEM" | null`), not a user ID. OrderHistory entry fields: status_his_id, order_id, status, changed_by (actor UUID), actor_role, notes, timestamp. | Est: 1h
-- [ ] TASK-302: Define order status enum and valid transition map for frontend validation | Est: 0.5h
+- [x] TASK-301: Define TypeScript types for Order Service responses: Order, ShippingAddress, ProductSnapshot, OrderHistory, JastiperRating, ProductRating, PaginatedOrderResponse. NOTE: `cancelled_by` in Order is a role string (`"TITIPERS" | "JASTIPER" | "ADMIN" | "SYSTEM" | null`), not a user ID. OrderHistory entry fields: status_his_id, order_id, status, changed_by (actor UUID), actor_role, notes, timestamp. | Est: 1h
+- [x] TASK-302: Define order status enum and valid transition map for frontend validation | Est: 0.5h
 
 ### Phase 2: Service Layer
-- [ ] TASK-303: Implement src/services/order.service.ts — createOrder(data) POST /orders | Est: 1h
-- [ ] TASK-304: Implement order.service.ts — getOrder(orderId) GET /orders/{order_id} | Est: 0.5h
-- [ ] TASK-305: Implement order.service.ts — payOrder(orderId) PATCH /orders/{order_id}/payment | Est: 0.5h
-- [ ] TASK-306: Implement order.service.ts — confirmOrder(orderId) PATCH /orders/{order_id}/confirm | Est: 0.5h
-- [ ] TASK-307: Implement order.service.ts — markPurchased(orderId) PATCH /orders/{order_id}/purchased | Est: 0.5h
-- [ ] TASK-308: Implement order.service.ts — markShipped(orderId, trackingNumber, courier) PATCH /orders/{order_id}/shipped | Est: 0.5h
-- [ ] TASK-309: Implement order.service.ts — cancelOrder(orderId, cancellationReason) POST /orders/{order_id}/cancel | Est: 0.5h
-- [ ] TASK-310: Implement order.service.ts — getOrderHistory(orderId) GET /orders/{order_id}/history | Est: 0.5h
-- [ ] TASK-311: Implement order.service.ts — getMyPurchases(params) GET /orders/my/purchases | Est: 0.5h
-- [ ] TASK-312: Implement order.service.ts — getMySales(params) GET /orders/my/sales | Est: 0.5h
-- [ ] TASK-313: Implement order.service.ts — rateJastiper(orderId, rating, review) POST /orders/{order_id}/rating/jastiper | Est: 0.5h
-- [ ] TASK-314: Implement order.service.ts — rateProduct(orderId, rating, review, images) POST /orders/{order_id}/rating/product | Est: 0.5h
-- [ ] TASK-315: Implement order.service.ts — getJastiperRating(orderId) GET /orders/{order_id}/rating/jastiper | Est: 0.5h
-- [ ] TASK-316: Implement order.service.ts — getProductRating(orderId) GET /orders/{order_id}/rating/product | Est: 0.5h
+- [x] TASK-303: Implement src/services/order.service.ts — createOrder(data) POST /orders | Est: 1h
+- [x] TASK-304: Implement order.service.ts — getOrder(orderId) GET /orders/{order_id} | Est: 0.5h
+- [x] TASK-305: Implement order.service.ts — payOrder(orderId) PATCH /orders/{order_id}/payment | Est: 0.5h
+- [x] TASK-306: Implement order.service.ts — confirmOrder(orderId) PATCH /orders/{order_id}/confirm | Est: 0.5h
+- [x] TASK-307: Implement order.service.ts — markPurchased(orderId) PATCH /orders/{order_id}/purchased | Est: 0.5h
+- [x] TASK-308: Implement order.service.ts — markShipped(orderId, trackingNumber, courier) PATCH /orders/{order_id}/shipped | Est: 0.5h
+- [x] TASK-309: Implement order.service.ts — cancelOrder(orderId, cancellationReason) POST /orders/{order_id}/cancel | Est: 0.5h
+- [x] TASK-310: Implement order.service.ts — getOrderHistory(orderId) GET /orders/{order_id}/history | Est: 0.5h
+- [x] TASK-311: Implement order.service.ts — getMyPurchases(params) GET /orders/my/purchases | Est: 0.5h
+- [x] TASK-312: Implement order.service.ts — getMySales(params) GET /orders/my/sales | Est: 0.5h
+- [x] TASK-313: Implement order.service.ts — rateJastiper(orderId, rating, review) POST /orders/{order_id}/rating/jastiper | Est: 0.5h
+- [x] TASK-314: Implement order.service.ts — rateProduct(orderId, rating, review, images) POST /orders/{order_id}/rating/product | Est: 0.5h
+- [x] TASK-315: Implement order.service.ts — getJastiperRating(orderId) GET /orders/{order_id}/rating/jastiper | Est: 0.5h
+- [x] TASK-316: Implement order.service.ts — getProductRating(orderId) GET /orders/{order_id}/rating/product | Est: 0.5h
 
 ### Phase 4: Frontend Pages and Components
 - [ ] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: Use camelCase ProductResponse fields for price display (`product.price`, `product.serviceFee`, `product.stock`, `product.productId`) since ProductResponse from GET /products/{id} uses camelCase. | Est: 4h
