@@ -71,24 +71,24 @@
 - [x] TASK-202: Note and document the camelCase/snake_case inconsistency: ProductResponse uses camelCase (productId, originCountry), CategoryResponse uses snake_case (category_id, product_count) | Est: 0.5h
 
 ### Phase 2: Service Layer
-- [ ] TASK-203: Implement src/services/inventory.service.ts — getCategories() GET /categories | Est: 0.5h
-- [ ] TASK-204: Implement inventory.service.ts — searchProducts(params) GET /products with all filter params | Est: 1h
-- [ ] TASK-205: Implement inventory.service.ts — getProduct(id) GET /products/{id} | Est: 0.5h
-- [ ] TASK-206: Implement inventory.service.ts — getJastiperCatalog(username, params) GET /jastipers/{username}/products | Est: 0.5h
-- [ ] TASK-207: Implement inventory.service.ts — createProduct(data) POST /products | Est: 0.5h
-- [ ] TASK-208: Implement inventory.service.ts — updateProduct(id, data) PATCH /products/{id} | Est: 0.5h
-- [ ] TASK-209: Implement inventory.service.ts — deleteProduct(id) DELETE /products/{id} | Est: 0.5h
-- [ ] TASK-210: Implement inventory.service.ts — getMyProducts(params) GET /products/my | Est: 0.5h
-- [ ] TASK-211: Implement inventory.service.ts — getMyProduct(id) GET /products/my/{id} | Est: 0.5h
-- [ ] TASK-212: Implement inventory.service.ts — adminGetAllProducts(params) GET /admin/products | Est: 0.5h
-- [ ] TASK-213: Implement inventory.service.ts — adminModerateProduct(id, action, reason) PATCH /admin/products/{id}/moderate | Est: 0.5h
-- [ ] TASK-214: Implement inventory.service.ts — adminCreateCategory(data) POST /admin/categories | Est: 0.5h
-- [ ] TASK-215: Implement inventory.service.ts — adminUpdateCategory(id, data) PATCH /admin/categories/{id} | Est: 0.5h
-- [ ] TASK-216: Implement inventory.service.ts — adminDeleteCategory(id) DELETE /admin/categories/{id} | Est: 0.5h
+- [x] TASK-203: Implement src/services/inventory.service.ts — getCategories() GET /categories | Est: 0.5h
+- [x] TASK-204: Implement inventory.service.ts — searchProducts(params) GET /products with all filter params | Est: 1h
+- [x] TASK-205: Implement inventory.service.ts — getProduct(id) GET /products/{id} | Est: 0.5h
+- [x] TASK-206: Implement inventory.service.ts — getJastiperCatalog(username, params) GET /jastipers/{username}/products | Est: 0.5h
+- [x] TASK-207: Implement inventory.service.ts — createProduct(data) POST /products | Est: 0.5h
+- [x] TASK-208: Implement inventory.service.ts — updateProduct(id, data) PATCH /products/{id} | Est: 0.5h
+- [x] TASK-209: Implement inventory.service.ts — deleteProduct(id) DELETE /products/{id} | Est: 0.5h
+- [x] TASK-210: Implement inventory.service.ts — getMyProducts(params) GET /products/my | Est: 0.5h
+- [x] TASK-211: Implement inventory.service.ts — getMyProduct(id) GET /products/my/{id} | Est: 0.5h
+- [x] TASK-212: Implement inventory.service.ts — adminGetAllProducts(params) GET /admin/products | Est: 0.5h
+- [x] TASK-213: Implement inventory.service.ts — adminModerateProduct(id, action, reason) PATCH /admin/products/{id}/moderate | Est: 0.5h
+- [x] TASK-214: Implement inventory.service.ts — adminCreateCategory(data) POST /admin/categories | Est: 0.5h
+- [x] TASK-215: Implement inventory.service.ts — adminUpdateCategory(id, data) PATCH /admin/categories/{id} | Est: 0.5h
+- [x] TASK-216: Implement inventory.service.ts — adminDeleteCategory(id) DELETE /admin/categories/{id} | Est: 0.5h
 
 ### Phase 4: Frontend Pages and Components
-- [ ] TASK-217: Build / landing page (src/app/page.tsx) — hero, featured products, how it works, top jastipers, category links | Est: 4h
-- [ ] TASK-218: Build /catalog page (src/app/catalog/page.tsx) — product search with filters, pagination, URL param sync | Est: 4h
+- [x] TASK-217: Build / landing page (src/app/page.tsx) — hero, featured products, how it works, top jastipers, category links | Est: 4h
+- [x] TASK-218: Build /catalog page (src/app/catalog/page.tsx) — product search with filters, pagination, URL param sync | Est: 4h
 - [ ] TASK-219: Build /catalog/[productId] page (src/app/catalog/[productId]/page.tsx) — product detail, image gallery, jastiper info, checkout button logic | Est: 3h
 - [ ] TASK-220: Build /jastiper/catalog page (src/app/jastiper/catalog/page.tsx) — own catalog with all statuses, hide/show/delete actions | Est: 3h
 - [ ] TASK-221: Build /jastiper/catalog/new page (src/app/jastiper/catalog/new/page.tsx) — product creation form | Est: 3h
