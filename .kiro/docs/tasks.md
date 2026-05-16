@@ -54,8 +54,8 @@
 - [x] TASK-120: Build /profile/kyc page (src/app/profile/kyc/page.tsx) — KYC submission form with dynamic social_media_links, ktp_number 16-digit validation | Est: 3h
 - [x] TASK-121: Build /jastiper/[username] public profile page (src/app/jastiper/[username]/page.tsx) — profile header, stats, badges, product catalog | Est: 3h
 - [x] TASK-122: Build /admin/users page (src/app/admin/users/page.tsx) — user table with filters, ban/unban actions | Est: 3h
-- [~] TASK-123: Build /admin/users/[userId] page (src/app/admin/users/[userId]/page.tsx) — full user detail with KYC info and stats | Est: 2h
-- [~] TASK-124: Build /admin/kyc page (src/app/admin/kyc/page.tsx) — KYC queue with review modal, approve/reject actions | Est: 3h
+- [ ] TASK-123: Build /admin/users/[userId] page (src/app/admin/users/[userId]/page.tsx) — full user detail with KYC info and stats | Est: 2h
+- [ ] TASK-124: Build /admin/kyc page (src/app/admin/kyc/page.tsx) — KYC queue with review modal, approve/reject actions | Est: 3h
 
 ### Phase 5: Integration and Testing
 - [ ] TASK-125: Test login flow end-to-end: login, token stored in context, auto-refresh on 401, logout clears cookie | Est: 2h
@@ -93,7 +93,7 @@
 - [x] TASK-220: Build /jastiper/catalog page (src/app/jastiper/catalog/page.tsx) — own catalog with all statuses, hide/show/delete actions | Est: 3h
 - [x] TASK-221: Build /jastiper/catalog/new page (src/app/jastiper/catalog/new/page.tsx) — product creation form | Est: 3h
 - [x] TASK-222: Build /jastiper/catalog/[productId]/edit page (src/app/jastiper/catalog/[productId]/edit/page.tsx) — product edit form pre-filled | Est: 2h
-- [ ] TASK-223: Build /admin/catalog page (src/app/admin/catalog/page.tsx) — all products with moderation actions | Est: 3h
+- [x] TASK-223: Build /admin/catalog page (src/app/admin/catalog/page.tsx) — all products with moderation actions | Est: 3h
 
 ### Phase 5: Integration and Testing
 - [ ] TASK-224: Test product search with all filter combinations | Est: 1h
