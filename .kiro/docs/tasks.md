@@ -91,8 +91,8 @@
 - [x] TASK-218: Build /catalog page (src/app/catalog/page.tsx) — product search with filters, pagination, URL param sync | Est: 4h
 - [x] TASK-219: Build /catalog/[productId] page (src/app/catalog/[productId]/page.tsx) — product detail, image gallery, jastiper info, checkout button logic | Est: 3h
 - [x] TASK-220: Build /jastiper/catalog page (src/app/jastiper/catalog/page.tsx) — own catalog with all statuses, hide/show/delete actions | Est: 3h
-- [ ] TASK-221: Build /jastiper/catalog/new page (src/app/jastiper/catalog/new/page.tsx) — product creation form | Est: 3h
-- [ ] TASK-222: Build /jastiper/catalog/[productId]/edit page (src/app/jastiper/catalog/[productId]/edit/page.tsx) — product edit form pre-filled | Est: 2h
+- [x] TASK-221: Build /jastiper/catalog/new page (src/app/jastiper/catalog/new/page.tsx) — product creation form | Est: 3h
+- [x] TASK-222: Build /jastiper/catalog/[productId]/edit page (src/app/jastiper/catalog/[productId]/edit/page.tsx) — product edit form pre-filled | Est: 2h
 - [ ] TASK-223: Build /admin/catalog page (src/app/admin/catalog/page.tsx) — all products with moderation actions | Est: 3h
 
 ### Phase 5: Integration and Testing
