@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
   // Store the token in an HttpOnly cookie for server-side access (middleware, BFF routes)
   response.cookies.set({
-    name: 'token',
+    name: 'refresh_token',
     value: refresh_token,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

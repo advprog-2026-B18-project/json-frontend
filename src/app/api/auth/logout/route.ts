@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const token = request.cookies.get('token')?.value;
+  const token = request.cookies.get('refresh_token')?.value;
   if (!token) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   // Clear the token cookie
   response.cookies.set({
-    name: 'token',
+    name: 'refresh_token',
     value: '',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

@@ -214,3 +214,98 @@ export function paymentRequest<T>(path: string, options: ServiceRequestOptions):
     errorShape: 'problem-details',
   });
 }
+
+// ---------------------------------------------------------------------------
+// Spec-required aliases
+// ---------------------------------------------------------------------------
+
+export type ApiService = 'auth' | 'payment' | 'inventory' | 'orders';
+
+/**
+ * Base fetch helper — selects the correct base URL and error shape by service name.
+ * Matches the `apiFetchFrom(service, path, options)` contract from the spec.
+ */
+export function apiFetchFrom<T>(
+  service: ApiService,
+  path: string,
+  options?: {
+    method?: string;
+    body?: unknown;
+    token?: string;
+    headers?: Record<string, string>;
+  }
+): Promise<T> {
+  const serviceConfig: Record<ApiService, { envKey: string; errorShape: ApiErrorShape }> = {
+    auth: { envKey: 'NEXT_PUBLIC_AUTH_SERVICE_URL', errorShape: 'envelope' },
+    payment: { envKey: 'NEXT_PUBLIC_PAYMENT_SERVICE_URL', errorShape: 'problem-details' },
+    inventory: { envKey: 'NEXT_PUBLIC_INVENTORY_SERVICE_URL', errorShape: 'envelope' },
+    orders: { envKey: 'NEXT_PUBLIC_ORDER_SERVICE_URL', errorShape: 'envelope' },
+  };
+  const { envKey, errorShape } = serviceConfig[service];
+  return apiRequest<T>({
+    baseUrl: getEnv(envKey),
+    path,
+    method: (options?.method as ApiRequestOptions['method']) ?? 'GET',
+    body: options?.body,
+    token: options?.token,
+    headers: options?.headers,
+    errorShape,
+  });
+}
+
+/**
+ * Fetch helper for internal Next.js BFF routes.
+ * Uses `credentials: 'include'` so the browser sends the HttpOnly refresh_token cookie.
+ * Does NOT prepend a service base URL — `path` must be an absolute path like `/api/auth/login`.
+ */
+export async function appFetch<T>(
+  path: string,
+  options?: {
+    method?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+  }
+): Promise<T> {
+  const res = await fetch(path, {
+    method: options?.method ?? 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options?.headers ?? {}),
+    },
+    ...(options?.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+  });
+
+  const responseBody = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const b = responseBody as { message?: string } | null;
+    throw new ApiError(res.status, b?.message ?? `Request failed (HTTP ${res.status}).`);
+  }
+
+  return responseBody as T;
+}
+
+/** Convenience wrapper — Auth service */
+export const authFetch = <T>(
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
+): Promise<T> => apiFetchFrom<T>('auth', path, opts);
+
+/** Convenience wrapper — Payment service */
+export const paymentFetch = <T>(
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
+): Promise<T> => apiFetchFrom<T>('payment', path, opts);
+
+/** Convenience wrapper — Inventory service */
+export const inventoryFetch = <T>(
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
+): Promise<T> => apiFetchFrom<T>('inventory', path, opts);
+
+/** Convenience wrapper — Orders service */
+export const ordersFetch = <T>(
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
+): Promise<T> => apiFetchFrom<T>('orders', path, opts);

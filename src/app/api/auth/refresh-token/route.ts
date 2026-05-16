@@ -22,7 +22,7 @@ async function readJsonSafe(res: Response): Promise<unknown> {
 }
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
+  const token = request.cookies.get('refresh_token')?.value;
   if (!token) {
     return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
   }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   );
 
   response.cookies.set({
-    name: 'token',
+    name: 'refresh_token',
     value: newToken,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

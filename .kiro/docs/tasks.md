@@ -3,23 +3,23 @@
 ## Module 0: Project Setup and Infrastructure
 
 ### Phase 1: Setup and Models
-- [ ] TASK-001: Initialize Next.js 16 project with TypeScript strict mode, Tailwind CSS v4, and path alias @/* | Est: 1h
-- [ ] TASK-002: Configure globals.css with CSS custom properties (--color-primary-dark, --color-primary, --color-secondary, --color-secondary-light) | Est: 0.5h
-- [ ] TASK-003: Install and configure TanStack Query v5 (@tanstack/react-query, @tanstack/react-query-devtools) | Est: 0.5h
-- [ ] TASK-004: Set up QueryClientProvider in root layout (src/app/layout.tsx) with client boundary | Est: 0.5h
-- [ ] TASK-005: Set up AuthProvider in root layout (src/lib/auth/AuthProvider.tsx) wrapping the app | Est: 1h
-- [ ] TASK-006: Configure environment variables in .env.local (NEXT_PUBLIC_AUTH_SERVICE_URL, NEXT_PUBLIC_INVENTORY_SERVICE_URL, NEXT_PUBLIC_ORDER_SERVICE_URL, NEXT_PUBLIC_PAYMENT_SERVICE_URL, JWT_SECRET) | Est: 0.5h
-- [ ] TASK-007: Implement middleware.ts for /admin/* route protection using verifyJwt and isAdmin from src/lib/auth.ts | Est: 1h
-- [ ] TASK-008: Implement src/lib/auth.ts with verifyJwt, isAdmin, isJastiper, isTitipers helper functions using jose | Est: 1h
+- [x] TASK-001: Initialize Next.js 16 project with TypeScript strict mode, Tailwind CSS v4, and path alias @/* | Est: 1h
+- [x] TASK-002: Configure globals.css with CSS custom properties (--color-primary-dark, --color-primary, --color-secondary, --color-secondary-light) | Est: 0.5h
+- [x] TASK-003: Install and configure TanStack Query v5 (@tanstack/react-query, @tanstack/react-query-devtools) | Est: 0.5h
+- [x] TASK-004: Set up QueryClientProvider in root layout (src/app/layout.tsx) with client boundary | Est: 0.5h
+- [x] TASK-005: Set up AuthProvider in root layout (src/lib/auth/AuthProvider.tsx) wrapping the app | Est: 1h
+- [x] TASK-006: Configure environment variables in .env.local (NEXT_PUBLIC_AUTH_SERVICE_URL, NEXT_PUBLIC_INVENTORY_SERVICE_URL, NEXT_PUBLIC_ORDER_SERVICE_URL, NEXT_PUBLIC_PAYMENT_SERVICE_URL, JWT_SECRET) | Est: 0.5h
+- [x] TASK-007: Implement middleware.ts for /admin/* route protection using verifyJwt and isAdmin from src/lib/auth.ts | Est: 1h
+- [x] TASK-008: Implement src/lib/auth.ts with verifyJwt, isAdmin, isJastiper, isTitipers helper functions using jose | Est: 1h
 
 ### Phase 2: Service Layer Base
-- [ ] TASK-009: Implement src/services/api-client.ts with apiFetchFrom, authFetch, paymentFetch, inventoryFetch, ordersFetch, appFetch, ApiError class, and isApiError type guard | Est: 2h
-- [ ] TASK-010: Implement dual error normalization in api-client.ts: handle both { success, message } envelope (Auth/Inventory/Order) and RFC 9457 Problem Details (Payment) into unified ApiError shape | Est: 1.5h
+- [x] TASK-009: Implement src/services/api-client.ts with apiFetchFrom, authFetch, paymentFetch, inventoryFetch, ordersFetch, appFetch, ApiError class, and isApiError type guard | Est: 2h
+- [x] TASK-010: Implement dual error normalization in api-client.ts: handle both { success, message } envelope (Auth/Inventory/Order) and RFC 9457 Problem Details (Payment) into unified ApiError shape | Est: 1.5h
 
 ### Phase 3: BFF Route Handlers
-- [ ] TASK-011: Implement POST /api/auth/login BFF route (src/app/api/auth/login/route.ts) — proxies to Auth Service, sets refresh_token HttpOnly cookie, returns access_token in body | Est: 1h
-- [ ] TASK-012: Implement POST /api/auth/logout BFF route (src/app/api/auth/logout/route.ts) — clears refresh_token cookie | Est: 0.5h
-- [ ] TASK-013: Implement POST /api/auth/refresh-token BFF route (src/app/api/auth/refresh-token/route.ts) — reads refresh_token cookie, calls Auth Service, sets new cookie | Est: 1h
+- [x] TASK-011: Implement POST /api/auth/login BFF route (src/app/api/auth/login/route.ts) — proxies to Auth Service, sets refresh_token HttpOnly cookie, returns access_token in body | Est: 1h
+- [x] TASK-012: Implement POST /api/auth/logout BFF route (src/app/api/auth/logout/route.ts) — clears refresh_token cookie | Est: 0.5h
+- [x] TASK-013: Implement POST /api/auth/refresh-token BFF route (src/app/api/auth/refresh-token/route.ts) — reads refresh_token cookie, calls Auth Service, sets new cookie | Est: 1h
 
 ---
 
