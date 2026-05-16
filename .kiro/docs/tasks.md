@@ -45,7 +45,7 @@
 - [x] TASK-115: Implement useAuthorizedFetch hook in src/lib/api/useAuthorizedFetch.ts — attaches Bearer token, retries on 401 with refresh | Est: 2h
 
 ### Phase 3: API Integration
-- [ ] TASK-116: Implement AuthProvider context (src/lib/auth/AuthProvider.tsx) with accessToken state, setAccessToken, clearAuth, and auto-refresh on mount | Est: 2h
+- [x] TASK-116: Implement AuthProvider context (src/lib/auth/AuthProvider.tsx) with accessToken state, setAccessToken, clearAuth, and auto-refresh on mount | Est: 2h
 
 ### Phase 4: Frontend Pages and Components
 - [ ] TASK-117: Build /login page (src/app/login/page.tsx) — email/password form, React 19 form action, role-based redirect on success | Est: 2h
