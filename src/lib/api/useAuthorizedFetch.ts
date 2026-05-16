@@ -1,17 +1,24 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-
-import type { ApiService } from './client';
-import { apiFetchFrom, isApiError } from './client';
-import { refreshToken } from './auth';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { refreshToken } from '@/services/auth.service';
+import { isApiError } from '@/services/api-client';
+import { authRequest, inventoryRequest, orderRequest, paymentRequest } from '@/services/api-client';
+
+export type AuthorizedService = 'auth' | 'inventory' | 'orders' | 'payment';
+
+type ServiceRequestOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  headers?: Record<string, string>;
+};
 
 export function useAuthorizedFetch() {
   const { accessToken, setAccessToken, clearAuth } = useAuth();
   const refreshInFlight = useRef<Promise<string | null> | null>(null);
 
-  const refreshAccessToken = useCallback(async () => {
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
     if (!refreshInFlight.current) {
       refreshInFlight.current = (async () => {
         try {
@@ -26,22 +33,24 @@ export function useAuthorizedFetch() {
         }
       })();
     }
-
     return refreshInFlight.current;
   }, [clearAuth, setAccessToken]);
 
-  const authorizedFetchFrom = useCallback(
-    async <T,>(service: ApiService, endpoint: string, options?: RequestInit): Promise<T> => {
+  const authorizedFetch = useCallback(
+    async <T,>(
+      service: AuthorizedService,
+      path: string,
+      options: ServiceRequestOptions = {}
+    ): Promise<T> => {
       const doRequest = (token: string | null) => {
-        const headers: HeadersInit = {
-          ...(options?.headers ?? {}),
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        };
+        const requestFn = {
+          auth: authRequest,
+          inventory: inventoryRequest,
+          orders: orderRequest,
+          payment: paymentRequest,
+        }[service] as typeof authRequest;
 
-        return apiFetchFrom<T>(service, endpoint, {
-          ...options,
-          headers,
-        });
+        return requestFn<T>(path, { ...options, token: token ?? undefined });
       };
 
       try {
@@ -49,17 +58,14 @@ export function useAuthorizedFetch() {
       } catch (error) {
         if (isApiError(error) && error.status === 401) {
           const nextToken = await refreshAccessToken();
-          if (!nextToken) {
-            throw error;
-          }
+          if (!nextToken) throw error;
           return doRequest(nextToken);
         }
-
         throw error;
       }
     },
     [accessToken, refreshAccessToken]
   );
 
-  return { authorizedFetchFrom, accessToken };
+  return { authorizedFetch, accessToken };
 }

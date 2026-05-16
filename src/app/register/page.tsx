@@ -4,13 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { isApiError } from '@/lib/api/client';
-import {
-  register,
-  type RegisterErrorListResponse,
-  type RegisterMessageResponse,
-  type RegisterRole,
-} from '@/lib/api/auth';
+import { register, isApiError } from '@/services/auth.service';
 
 const SUCCESS_REDIRECT_DELAY = 2500;
 
@@ -27,17 +21,13 @@ export default function RegisterPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
-    if (!showSuccessModal) {
-      return;
-    }
+    if (!showSuccessModal) return;
 
     const timeoutId = window.setTimeout(() => {
       router.push('/login');
     }, SUCCESS_REDIRECT_DELAY);
 
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
+    return () => window.clearTimeout(timeoutId);
   }, [router, showSuccessModal]);
 
   const handleSubmit = async (formData: FormData) => {
@@ -47,7 +37,6 @@ export default function RegisterPage() {
     const submittedEmail = String(formData.get('email') ?? '');
     const submittedPassword = String(formData.get('password') ?? '');
     const submittedPasswordConfirmation = String(formData.get('password_confirmation') ?? '');
-    const submittedRole: RegisterRole = 'TITIPERS';
 
     if (submittedPassword !== submittedPasswordConfirmation) {
       setPasswordConfirmationError('Password dan konfirmasi password harus sama.');
@@ -61,34 +50,16 @@ export default function RegisterPage() {
         email: submittedEmail,
         password: submittedPassword,
         password_confirmation: submittedPasswordConfirmation,
-        role: submittedRole,
+        role: 'TITIPERS',
       });
       setShowSuccessModal(true);
-      return;
     } catch (error) {
       if (isApiError(error)) {
-        if (error.status === 400 || error.status === 422) {
-          const data = error.body as RegisterErrorListResponse | null;
-          const messages = (data?.errors ?? [])
-            .map((item) => item.message)
-            .filter((message) => Boolean(message));
-
-          setApiErrors(messages.length > 0 ? messages : ['Registrasi gagal.']);
-          return;
-        }
-
-        if (error.status === 409) {
-          const data = error.body as RegisterMessageResponse | null;
-          setApiErrors([data?.message ?? 'Email already registered']);
-          return;
-        }
-
-        const fallbackData = error.body as RegisterMessageResponse | null;
-        setApiErrors([fallbackData?.message ?? 'Terjadi kesalahan. Silakan coba lagi.']);
-        return;
+        // field is set for the first validation error; message is always the human-readable text
+        setApiErrors([error.message || 'Registrasi gagal.']);
+      } else {
+        setApiErrors([error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.']);
       }
-
-      setApiErrors([error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.']);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,9 +67,9 @@ export default function RegisterPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-br from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] flex items-center justify-center px-4 py-12">
+      <main className="min-h-screen bg-linear-to-br from-(--color-primary-dark) to-(--color-primary) flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/95 p-8 shadow-lg backdrop-blur">
-          <h1 className="text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] bg-clip-text text-transparent">
+          <h1 className="text-center text-3xl font-bold tracking-tight bg-linear-to-r from-(--color-primary-dark) to-(--color-primary) bg-clip-text text-transparent">
             Register
           </h1>
 
@@ -147,9 +118,7 @@ export default function RegisterPage() {
                 value={passwordConfirmation}
                 onChange={(event) => {
                   setPasswordConfirmation(event.target.value);
-                  if (passwordConfirmationError) {
-                    setPasswordConfirmationError('');
-                  }
+                  if (passwordConfirmationError) setPasswordConfirmationError('');
                 }}
                 className="w-full rounded-lg border border-[#519A66]/30 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#519A66]"
                 placeholder="••••••••"
@@ -174,7 +143,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] px-4 py-2 text-white font-semibold shadow-sm hover:from-[color:var(--color-primary)] hover:to-[color:var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-lg bg-linear-to-r from-(--color-primary-dark) to-(--color-primary) px-4 py-2 text-white font-semibold shadow-sm hover:from-(--color-primary) hover:to-(--color-primary-dark) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Memuat...' : 'Register'}
             </button>

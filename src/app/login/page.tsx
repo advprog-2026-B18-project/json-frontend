@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { isApiError } from '@/lib/api/client';
-import { login, type LoginErrorResponse } from '@/lib/api/auth';
+import { login, isApiError } from '@/services/auth.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 export default function LoginPage() {
@@ -25,33 +24,26 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const data = await login(submittedEmail, submittedPassword);
-      setAccessToken(data.access_token);
+      const data = await login({ email: submittedEmail, password: submittedPassword });
+      // The auth service returns the access token in a field named `refresh_token`
+      // (backend naming quirk — cannot be changed). Store it as the access token.
+      setAccessToken(data.refresh_token);
       router.push('/');
-      return;
     } catch (error) {
       if (isApiError(error)) {
-        if (error.status === 401 || error.status === 403) {
-          const body = error.body as LoginErrorResponse | null;
-          setErrorMessage(body?.message ?? 'Login gagal.');
-          return;
-        }
-
-        const body = error.body as LoginErrorResponse | null;
-        setErrorMessage(body?.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
-        return;
+        setErrorMessage(error.message || 'Login gagal.');
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.');
       }
-
-      setErrorMessage(error instanceof Error ? error.message : 'Tidak dapat terhubung ke server.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-linear-to-br from-(--color-primary-dark) to-(--color-primary) flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/95 p-8 shadow-lg backdrop-blur">
-        <h1 className="text-center text-3xl font-bold tracking-tight bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] bg-clip-text text-transparent">
+        <h1 className="text-center text-3xl font-bold tracking-tight bg-linear-to-r from-(--color-primary-dark) to-(--color-primary) bg-clip-text text-transparent">
           Login
         </h1>
 
@@ -97,7 +89,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-gradient-to-r from-[color:var(--color-primary-dark)] to-[color:var(--color-primary)] px-4 py-2 text-white font-semibold shadow-sm hover:from-[color:var(--color-primary)] hover:to-[color:var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-linear-to-r from-(--color-primary-dark) to-(--color-primary) px-4 py-2 text-white font-semibold shadow-sm hover:from-(--color-primary) hover:to-(--color-primary-dark) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? 'Memuat...' : 'Login'}
           </button>
