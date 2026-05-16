@@ -26,12 +26,12 @@
 ## Module 1: Auth and Profile
 
 ### Phase 1: Setup and Models
-- [ ] TASK-101: Define TypeScript types for Auth Service responses: LoginResponse, RegisterResponse, ProfileResponse, PublicProfileResponse, KYCStatusResponse, AdminUserListResponse, AdminKYCListResponse. NOTE: LoginResponse token field is `data.refresh_token` (not `access_token`) — this is the access token despite the field name. AdminUserListResponse pagination shape is `{ page, limit, total }` — no `total_pages` field in auth service pagination. | Est: 1h
+- [x] TASK-101: Define TypeScript types for Auth Service responses: LoginResponse, RegisterResponse, ProfileResponse, PublicProfileResponse, KYCStatusResponse, AdminUserListResponse, AdminKYCListResponse. NOTE: LoginResponse token field is `data.refresh_token` (not `access_token`) — this is the access token despite the field name. AdminUserListResponse pagination shape is `{ page, limit, total }` — no `total_pages` field in auth service pagination. | Est: 1h
 
 ### Phase 2: Service Layer
-- [ ] TASK-102: Implement src/services/auth.service.ts — register(email, password, passwordConfirmation, role) | Est: 0.5h
-- [ ] TASK-103: Implement auth.service.ts — login(email, password) via BFF /api/auth/login. NOTE: read the access token from `data.refresh_token` field in the response (backend naming quirk). | Est: 0.5h
-- [ ] TASK-104: Implement auth.service.ts — logout() via BFF /api/auth/logout | Est: 0.5h
+- [x] TASK-102: Implement src/services/auth.service.ts — register(email, password, passwordConfirmation, role) | Est: 0.5h
+- [x] TASK-103: Implement auth.service.ts — login(email, password) via BFF /api/auth/login. NOTE: read the access token from `data.refresh_token` field in the response (backend naming quirk). | Est: 0.5h
+- [x] TASK-104: Implement auth.service.ts — logout() via BFF /api/auth/logout | Est: 0.5h
 - [ ] TASK-105: Implement auth.service.ts — refreshToken() via BFF /api/auth/refresh-token | Est: 0.5h
 - [ ] TASK-106: Implement auth.service.ts — getMyProfile() GET /profile/me | Est: 0.5h
 - [ ] TASK-107: Implement auth.service.ts — updateMyProfile(data) PATCH /profile/me | Est: 0.5h
