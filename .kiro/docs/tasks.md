@@ -32,17 +32,17 @@
 - [x] TASK-102: Implement src/services/auth.service.ts — register(email, password, passwordConfirmation, role) | Est: 0.5h
 - [x] TASK-103: Implement auth.service.ts — login(email, password) via BFF /api/auth/login. NOTE: read the access token from `data.refresh_token` field in the response (backend naming quirk). | Est: 0.5h
 - [x] TASK-104: Implement auth.service.ts — logout() via BFF /api/auth/logout | Est: 0.5h
-- [ ] TASK-105: Implement auth.service.ts — refreshToken() via BFF /api/auth/refresh-token | Est: 0.5h
-- [ ] TASK-106: Implement auth.service.ts — getMyProfile() GET /profile/me | Est: 0.5h
-- [ ] TASK-107: Implement auth.service.ts — updateMyProfile(data) PATCH /profile/me | Est: 0.5h
-- [ ] TASK-108: Implement auth.service.ts — getPublicProfile(username) GET /profile/{username} | Est: 0.5h
-- [ ] TASK-109: Implement auth.service.ts — submitKYC(data) POST /profile/me/kyc | Est: 0.5h
-- [ ] TASK-110: Implement auth.service.ts — getMyKYCStatus() GET /profile/me/kyc | Est: 0.5h
-- [ ] TASK-111: Implement auth.service.ts — adminListUsers(params) GET /admin/users | Est: 0.5h
-- [ ] TASK-112: Implement auth.service.ts — adminGetUser(userId) GET /admin/users/{userId} | Est: 0.5h
-- [ ] TASK-113: Implement auth.service.ts — adminListKYC(params) GET /admin/kyc | Est: 0.5h
-- [ ] TASK-114: Implement auth.service.ts — adminReviewKYC(kycId, action, rejectionReason) PATCH /admin/kyc/{kycId}/review — NOTE: field name is rejection-reason with hyphen | Est: 1h
-- [ ] TASK-115: Implement useAuthorizedFetch hook in src/lib/api/useAuthorizedFetch.ts — attaches Bearer token, retries on 401 with refresh | Est: 2h
+- [x] TASK-105: Implement auth.service.ts — refreshToken() via BFF /api/auth/refresh-token | Est: 0.5h
+- [x] TASK-106: Implement auth.service.ts — getMyProfile() GET /profile/me | Est: 0.5h
+- [x] TASK-107: Implement auth.service.ts — updateMyProfile(data) PATCH /profile/me | Est: 0.5h
+- [x] TASK-108: Implement auth.service.ts — getPublicProfile(username) GET /profile/{username} | Est: 0.5h
+- [x] TASK-109: Implement auth.service.ts — submitKYC(data) POST /profile/me/kyc | Est: 0.5h
+- [x] TASK-110: Implement auth.service.ts — getMyKYCStatus() GET /profile/me/kyc | Est: 0.5h
+- [x] TASK-111: Implement auth.service.ts — adminListUsers(params) GET /admin/users | Est: 0.5h
+- [x] TASK-112: Implement auth.service.ts — adminGetUser(userId) GET /admin/users/{userId} | Est: 0.5h
+- [x] TASK-113: Implement auth.service.ts — adminListKYC(params) GET /admin/kyc | Est: 0.5h
+- [x] TASK-114: Implement auth.service.ts — adminReviewKYC(kycId, action, rejectionReason) PATCH /admin/kyc/{kycId}/review — NOTE: field name is rejection-reason with hyphen | Est: 1h
+- [x] TASK-115: Implement useAuthorizedFetch hook in src/lib/api/useAuthorizedFetch.ts — attaches Bearer token, retries on 401 with refresh | Est: 2h
 
 ### Phase 3: API Integration
 - [ ] TASK-116: Implement AuthProvider context (src/lib/auth/AuthProvider.tsx) with accessToken state, setAccessToken, clearAuth, and auto-refresh on mount | Est: 2h
