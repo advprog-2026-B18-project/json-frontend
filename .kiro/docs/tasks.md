@@ -48,14 +48,14 @@
 - [x] TASK-116: Implement AuthProvider context (src/lib/auth/AuthProvider.tsx) with accessToken state, setAccessToken, clearAuth, and auto-refresh on mount | Est: 2h
 
 ### Phase 4: Frontend Pages and Components
-- [ ] TASK-117: Build /login page (src/app/login/page.tsx) — email/password form, React 19 form action, role-based redirect on success | Est: 2h
-- [ ] TASK-118: Build /register page (src/app/register/page.tsx) — role selector, registration form, per-field validation errors | Est: 2h
-- [ ] TASK-119: Build /profile page (src/app/profile/page.tsx) — profile edit form, username validation, KYC status link | Est: 2h
-- [ ] TASK-120: Build /profile/kyc page (src/app/profile/kyc/page.tsx) — KYC submission form with dynamic social_media_links, ktp_number 16-digit validation | Est: 3h
-- [ ] TASK-121: Build /jastiper/[username] public profile page (src/app/jastiper/[username]/page.tsx) — profile header, stats, badges, product catalog | Est: 3h
-- [ ] TASK-122: Build /admin/users page (src/app/admin/users/page.tsx) — user table with filters, ban/unban actions | Est: 3h
-- [ ] TASK-123: Build /admin/users/[userId] page (src/app/admin/users/[userId]/page.tsx) — full user detail with KYC info and stats | Est: 2h
-- [ ] TASK-124: Build /admin/kyc page (src/app/admin/kyc/page.tsx) — KYC queue with review modal, approve/reject actions | Est: 3h
+- [x] TASK-117: Build /login page (src/app/login/page.tsx) — email/password form, React 19 form action, role-based redirect on success | Est: 2h
+- [x] TASK-118: Build /register page (src/app/register/page.tsx) — role selector, registration form, per-field validation errors | Est: 2h
+- [x] TASK-119: Build /profile page (src/app/profile/page.tsx) — profile edit form, username validation, KYC status link | Est: 2h
+- [x] TASK-120: Build /profile/kyc page (src/app/profile/kyc/page.tsx) — KYC submission form with dynamic social_media_links, ktp_number 16-digit validation | Est: 3h
+- [x] TASK-121: Build /jastiper/[username] public profile page (src/app/jastiper/[username]/page.tsx) — profile header, stats, badges, product catalog | Est: 3h
+- [x] TASK-122: Build /admin/users page (src/app/admin/users/page.tsx) — user table with filters, ban/unban actions | Est: 3h
+- [~] TASK-123: Build /admin/users/[userId] page (src/app/admin/users/[userId]/page.tsx) — full user detail with KYC info and stats | Est: 2h
+- [~] TASK-124: Build /admin/kyc page (src/app/admin/kyc/page.tsx) — KYC queue with review modal, approve/reject actions | Est: 3h
 
 ### Phase 5: Integration and Testing
 - [ ] TASK-125: Test login flow end-to-end: login, token stored in context, auto-refresh on 401, logout clears cookie | Est: 2h
