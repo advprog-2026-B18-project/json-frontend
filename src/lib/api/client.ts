@@ -19,10 +19,10 @@ export class ApiError extends Error {
 
 function getBaseUrlFor(service: ApiService): string {
   const envKeyByService: Record<ApiService, string> = {
-    auth: 'NEXT_PUBLIC_API_AUTH',
-    payment: 'NEXT_PUBLIC_API_PAYMENT',
-    inventory: 'NEXT_PUBLIC_API_INVENTORY',
-    orders: 'NEXT_PUBLIC_API_ORDERS',
+    auth: 'NEXT_PUBLIC_AUTH_SERVICE_URL',
+    payment: 'NEXT_PUBLIC_PAYMENT_SERVICE_URL',
+    inventory: 'NEXT_PUBLIC_INVENTORY_SERVICE_URL',
+    orders: 'NEXT_PUBLIC_ORDER_SERVICE_URL',
   };
 
   const envKey = envKeyByService[service];

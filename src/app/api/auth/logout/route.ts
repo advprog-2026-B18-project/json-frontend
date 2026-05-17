@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-type BackendLogoutSuccessResponse = {
-  message: string;
-};
-
-function getAuthBaseUrl() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
-  if (!baseUrl) {
-    throw new Error('NEXT_PUBLIC_API_AUTH is not set');
-  }
+function getAuthBaseUrl(): string {
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_AUTH_SERVICE_URL is not set');
   return baseUrl;
 }
 
-async function readJsonSafe(res: Response): Promise<unknown | null> {
-  const contentType = res.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) return null;
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
+async function readJsonSafe(res: Response): Promise<unknown> {
+  const ct = res.headers.get('content-type') ?? '';
+  if (!ct.toLowerCase().includes('application/json')) return null;
+  try { return await res.json(); } catch { return null; }
 }
 
 export async function POST(request: NextRequest) {
@@ -28,8 +18,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const refreshToken = request.cookies.get('refresh_token')?.value;
-  if (!refreshToken) {
+  const token = request.cookies.get('refresh_token')?.value;
+  if (!token) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -40,18 +30,21 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'application/json',
       Authorization: authorization,
     },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({ refresh_token: token }),
   });
 
-  const data = (await readJsonSafe(res)) as BackendLogoutSuccessResponse | { message?: string } | null;
+  const data = await readJsonSafe(res) as { message?: string } | null;
 
   if (!res.ok) {
-    return NextResponse.json(data ?? { message: 'Unauthorized' }, { status: res.status });
+    return NextResponse.json(
+      { message: data?.message ?? 'Logout gagal.' },
+      { status: res.status }
+    );
   }
 
-  const typed = data as BackendLogoutSuccessResponse;
+  const response = NextResponse.json({ message: data?.message ?? 'Logged out successfully' }, { status: 200 });
 
-  const response = NextResponse.json({ message: typed.message }, { status: 200 });
+  // Clear the token cookie
   response.cookies.set({
     name: 'refresh_token',
     value: '',

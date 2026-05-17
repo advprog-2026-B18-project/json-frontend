@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isAdmin, isLoggedIn, verifyJwt } from './src/lib/auth';
 
-const TOKEN_COOKIE = 'token';
+const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const LOGIN_PATH = '/login';
 
 function redirectToLogin(request: NextRequest) {
@@ -12,7 +12,7 @@ function redirectToLogin(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get(TOKEN_COOKIE)?.value;
+  const token = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
   if (!token) return redirectToLogin(request);
 
   const payload = await verifyJwt(token);
@@ -23,8 +23,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const requestHeaders = new Headers(request.headers);
-  if (payload?.user_id) requestHeaders.set('x-user-id', String(payload.user_id));
-  if (payload?.username) requestHeaders.set('x-username', payload.username);
+  if (payload?.sub) requestHeaders.set('x-user-id', payload.sub);
+  if (payload?.role) requestHeaders.set('x-role', payload.role);
 
   return NextResponse.next({ request: { headers: requestHeaders } });
 }

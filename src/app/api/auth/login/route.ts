@@ -1,35 +1,33 @@
 import { NextResponse } from 'next/server';
 
-type BackendLoginSuccessResponse = {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: 'Bearer';
-  user: {
-    user_id: string | number;
-    email: string;
-    role: string;
-    username: string;
-    status: string;
-  };
+// The auth service login response shape (before BFF transformation)
+type BackendLoginResponse = {
+  success: boolean;
+  data: {
+    refresh_token: string; // this is actually the access token — backend naming quirk
+    expires_in: number;
+    token_type: 'Bearer';
+    user: {
+      user_id: string;
+      email: string;
+      role: string;
+      username: string | null;
+      status: string;
+    };
+  } | null;
+  message?: string;
 };
 
-function getAuthBaseUrl() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_AUTH;
-  if (!baseUrl) {
-    throw new Error('NEXT_PUBLIC_API_AUTH is not set');
-  }
+function getAuthBaseUrl(): string {
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_AUTH_SERVICE_URL is not set');
   return baseUrl;
 }
 
-async function readJsonSafe(res: Response): Promise<unknown | null> {
-  const contentType = res.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) return null;
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
+async function readJsonSafe(res: Response): Promise<unknown> {
+  const ct = res.headers.get('content-type') ?? '';
+  if (!ct.toLowerCase().includes('application/json')) return null;
+  try { return await res.json(); } catch { return null; }
 }
 
 export async function POST(request: Request) {
@@ -47,27 +45,28 @@ export async function POST(request: Request) {
     body: JSON.stringify(payload),
   });
 
-  const data = (await readJsonSafe(res)) as BackendLoginSuccessResponse | { message?: string } | null;
+  const data = await readJsonSafe(res) as BackendLoginResponse | null;
 
   if (!res.ok) {
-    return NextResponse.json(data ?? { message: 'Login gagal.' }, { status: res.status });
+    const message = data?.message ?? 'Login gagal.';
+    return NextResponse.json({ message }, { status: res.status });
   }
 
-  const typed = data as BackendLoginSuccessResponse;
+  if (!data?.data) {
+    return NextResponse.json({ message: 'Respons tidak valid dari server.' }, { status: 502 });
+  }
+
+  const { refresh_token, expires_in, token_type, user } = data.data;
 
   const response = NextResponse.json(
-    {
-      access_token: typed.access_token,
-      expires_in: typed.expires_in,
-      token_type: typed.token_type,
-      user: typed.user,
-    },
+    { refresh_token, expires_in, token_type, user },
     { status: 200 }
   );
 
+  // Store the token in an HttpOnly cookie for server-side access (middleware, BFF routes)
   response.cookies.set({
     name: 'refresh_token',
-    value: typed.refresh_token,
+    value: refresh_token,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

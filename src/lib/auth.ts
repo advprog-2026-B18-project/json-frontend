@@ -1,9 +1,9 @@
 import { jwtVerify, type JWTPayload } from 'jose';
 
 export type JwtUserPayload = JWTPayload & {
-  user_id?: string | number;
-  username?: string;
-  roles?: string | string[];
+  // sub is already in JWTPayload (string | undefined)
+  email?: string;
+  role?: 'TITIPERS' | 'JASTIPER' | 'ADMIN';
 };
 
 let cachedJwtSecret: Uint8Array | null = null;
@@ -34,13 +34,11 @@ export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
 }
 
 export const isLoggedIn = (payload: JwtUserPayload | null): payload is JwtUserPayload => {
-  return Boolean(payload?.user_id && payload?.username && payload?.roles);
+  return Boolean(payload?.sub && payload?.role);
 };
 
 function hasRole(payload: JwtUserPayload | null, role: string): boolean {
-  if (!payload?.roles) return false;
-  if (Array.isArray(payload.roles)) return payload.roles.includes(role);
-  return payload.roles === role;
+  return payload?.role === role;
 }
 
 export const isAdmin = (payload: JwtUserPayload | null): boolean => hasRole(payload, 'ADMIN');
