@@ -13,7 +13,7 @@
   - `--color-primary`: `#519A66`
   - `--color-secondary`: `#FFAA00`
   - `--color-secondary-light`: `#FFD786`
-- Use `[color:var(--color-primary)]` syntax when referencing CSS vars inside Tailwind utility classes
+- - Use `(--color-primary)` syntax when referencing CSS vars inside Tailwind utility classes, e.g. `from-(--color-primary)`
 - Fonts: Geist Sans + Geist Mono (Google Fonts, loaded via `next/font`)
 
 ## Auth & Security

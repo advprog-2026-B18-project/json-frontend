@@ -15,12 +15,11 @@ import {
   getProductRating,
   rateJastiper,
   rateProduct,
-  isApiError,
   type Order,
   type OrderHistory,
-  type JastiperRating,
-  type ProductRating,
 } from '@/services/order.service';
+import type { JastiperRating, ProductRating } from '@/lib/api/orders';
+import { isApiError } from '@/services/api-client';
 import type { WalletResponse } from '@/services/payment.service';
 import { Navbar } from '@/components/Navbar';
 import { StatusBadge } from '@/components/StatusBadge';

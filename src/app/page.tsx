@@ -214,12 +214,12 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       <section className="bg-linear-to-br from-(--color-primary-dark) to-(--color-primary) px-4 py-20 text-center text-white">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Belanja dari Luar Negeri,
+          Jastip Online Nasional,
           <br />
           <span className="text-(--color-secondary-light)">Mudah dan Terpercaya</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-white/80">
-          Temukan produk impor pilihan dari Jastiper terpercaya di seluruh Indonesia.
+          Temukan produk jastip pilihan dari Jastiper terpercaya di seluruh Indonesia.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link

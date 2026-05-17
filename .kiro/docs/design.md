@@ -12,7 +12,7 @@ This document defines the complete UI/UX design for every page and shared compon
 
 ### Layout and Components
 The landing page uses a full-width layout with a sticky Navbar at the top. Sections:
-1. Hero Section: Full-width banner with JSON logo, tagline "Belanja dari Luar Negeri, Mudah dan Terpercaya", and two CTA buttons: "Mulai Belanja" (links to /catalog) and "Daftar Sebagai Jastiper" (links to /register). Background uses a gradient from --color-primary-dark to --color-primary.
+1. Hero Section: Full-width banner with JSON logo, tagline "Jastip Online Nasional, Mudah dan Terpercaya", and two CTA buttons: "Mulai Belanja" (links to /catalog) and "Daftar Sebagai Jastiper" (links to /register). Background uses a gradient from --color-primary-dark to --color-primary.
 2. Featured Products Section: Horizontally scrollable row of up to 8 ProductCard components showing ACTIVE products sorted by rating descending. Fetched from GET /products with limit=8&sortBy=rating&order=desc.
 3. How It Works Section: Three-column icon grid explaining the jastip flow: (1) Pilih Produk — browse and select items from jastipers, (2) Bayar via Dompet — pay securely from your JSON wallet, (3) Terima Barang — receive your item delivered to your door.
 4. Top Jastipers Section: Row of up to 6 jastiper profile mini-cards showing avatar, username, avg_rating (RatingStars), and total_orders. Clicking navigates to /jastiper/[username]. NOTE: No dedicated "top jastipers" endpoint exists in any service contract. This section uses GET /products?limit=8&sortBy=rating&order=desc and extracts unique jastiper info from the product results (jastiper.userId, jastiper.username, jastiper.avgRating, jastiper.totalOrders from ProductResponse.jastiper).

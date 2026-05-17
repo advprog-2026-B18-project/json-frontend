@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { getMyPurchases, isApiError, type Order } from '@/services/order.service';
+import { getMyPurchases, type Order } from '@/services/order.service';
+import { isApiError } from '@/services/api-client';
 import { Navbar } from '@/components/Navbar';
 import { OrderCard } from '@/components/OrderCard';
 import { Pagination } from '@/components/Pagination';
