@@ -125,7 +125,7 @@
 - [x] TASK-316: Implement order.service.ts — getProductRating(orderId) GET /orders/{order_id}/rating/product | Est: 0.5h
 
 ### Phase 4: Frontend Pages and Components
-- [ ] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: Use camelCase ProductResponse fields for price display (`product.price`, `product.serviceFee`, `product.stock`, `product.productId`) since ProductResponse from GET /products/{id} uses camelCase. | Est: 4h
+- [x] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: Use camelCase ProductResponse fields for price display (`product.price`, `product.serviceFee`, `product.stock`, `product.productId`) since ProductResponse from GET /products/{id} uses camelCase. | Est: 4h
 - [ ] TASK-318: Build /orders page (src/app/orders/page.tsx) — purchase history with status filter tabs, pagination | Est: 2h
 - [ ] TASK-319: Build /orders/[orderId] page (src/app/orders/[orderId]/page.tsx) — order detail with status timeline, action buttons, rating forms | Est: 4h
 - [ ] TASK-320: Build /jastiper/orders page (src/app/jastiper/orders/page.tsx) — incoming orders with action buttons | Est: 3h
