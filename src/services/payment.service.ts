@@ -15,6 +15,21 @@
 import { paymentRequest } from './api-client';
 
 // ---------------------------------------------------------------------------
+// TASK-418: Idempotency key generation
+// Use crypto.randomUUID() to generate a unique key before each top-up or
+// withdrawal submission. Call this once per form submission — never reuse keys.
+// Duplicate keys return 409 from the Payment Service.
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a unique idempotency key for top-up and withdrawal requests.
+ * Must be called once per submission attempt — never reuse across requests.
+ */
+export function generateIdempotencyKey(): string {
+  return crypto.randomUUID();
+}
+
+// ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
 
@@ -473,4 +488,45 @@ export async function adjustWallet(
     `/admin/wallets/${encodeURIComponent(userId)}/adjust`,
     { method: 'POST', token, body: input }
   );
+}
+
+// ---------------------------------------------------------------------------
+// TASK-419: Wallet balance pre-check
+// Used on the order detail page (/orders/[orderId]) to determine whether the
+// "Bayar Sekarang" (Pay Now) button should be enabled.
+//
+// Flow:
+//   1. Fetch GET /wallets/me to get the user's current spendable balance.
+//   2. Compare balance against the order's total_price.
+//   3. Disable the pay button if balance < total_price.
+//
+// NOTE: escrow_balance is NOT spendable — only `balance` is checked here.
+// NOTE: This check is advisory only — the Payment Service enforces the real
+//       constraint server-side and will return 422 if balance is insufficient.
+// ---------------------------------------------------------------------------
+
+export type WalletBalanceCheckResult = {
+  /** The user's current spendable balance in IDR. */
+  balance: number;
+  /** Whether the balance covers the required amount. */
+  isSufficient: boolean;
+};
+
+/**
+ * Fetches the user's wallet and checks whether their balance covers
+ * `requiredAmount`. Use this to gate the "Bayar Sekarang" button on the
+ * order detail page before calling payOrder().
+ *
+ * @param token       - JWT access token
+ * @param requiredAmount - The order's total_price (integer IDR)
+ */
+export async function checkWalletBalance(
+  token: string,
+  requiredAmount: number
+): Promise<WalletBalanceCheckResult> {
+  const wallet = await getWallet(token);
+  return {
+    balance: wallet.balance,
+    isSufficient: wallet.balance >= requiredAmount,
+  };
 }

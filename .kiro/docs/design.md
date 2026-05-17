@@ -1109,55 +1109,111 @@ Admin layout with Navbar and Sidebar:
 
 ---
 
-## Page: Payment Monitoring (Admin)
-- **URL:** /admin/wallet
+## Page: Financial Summary (Admin)
+- **URL:** /admin/wallet/summary
 - **Access:** ADMIN
-- **Purpose:** Allow admin to monitor all financial transactions, approve top-ups, and process withdrawals.
+- **Purpose:** Show a high-level overview of platform financial health.
 
 ### Layout and Components
 Admin layout with Navbar and Sidebar:
-- Financial summary cards: total_topup, total_withdrawal, total_payment, total_refund, total_earning, platform_escrow_balance
-- Tabs: All Transactions, Pending Top-ups, Pending Withdrawals
-All Transactions tab:
-  - Filter row: type, status, user_id, date range, min_amount
-  - Transaction table with TransactionRow components
-  - Pagination
-Pending Top-ups tab:
-  - List of PENDING top-up requests with Approve/Reject buttons
-Pending Withdrawals tab:
-  - List of PENDING withdrawal requests with Approve/Reject buttons
-- Manual Adjustment section: user_id input, direction dropdown, amount, reason, reference_id
+- Six summary cards: total_topup, total_withdrawal, total_payment, total_refund, total_earning, platform_escrow_balance
+- Quick-link buttons to /admin/wallet/requests and /admin/wallet/transactions
 
 ### Reusable Components Used
 - Navbar
 - Sidebar
-- TransactionRow
-- WalletSummary
-- Pagination
-- ConfirmModal
+- LoadingSpinner / SkeletonLoader
+- EmptyState
+
+### API / Service Calls
+- GET /admin/transactions?page=1&limit=1 — used only to read the `summary` field from the response; no transaction rows are displayed on this page
+
+### User Interactions
+- Cards are read-only; clicking "Lihat Permintaan" navigates to /admin/wallet/requests
+- Clicking "Lihat Transaksi" navigates to /admin/wallet/transactions
+
+### Edge Cases and States
+- Loading state: Skeleton cards while fetching
+- Fetch error: Inline error with retry button
+
+---
+
+## Page: Top-Up & Withdrawal Requests (Admin)
+- **URL:** /admin/wallet/requests
+- **Access:** ADMIN
+- **Purpose:** Allow admin to review and act on pending top-up and withdrawal requests.
+
+### Layout and Components
+Admin layout with Navbar and Sidebar:
+- Two tabs: "Top-Up" and "Penarikan"
+- Top-Up tab: list of PENDING top-up requests — transaction_id, amount, created_at, Approve button, Reject button
+- Withdrawal tab: list of PENDING withdrawal requests — transaction_id, amount, created_at, Approve button, Reject button
+- Reject action opens a modal with a rejection_reason textarea before submitting
+
+### Reusable Components Used
+- Navbar
+- Sidebar
+- ConfirmModal (for reject reason)
 - LoadingSpinner / SkeletonLoader
 - EmptyState
 - Toast / Notification
 
 ### API / Service Calls
-- GET /admin/transactions?type=&status=&user_id=&date_from=&date_to=&min_amount=&page=&limit= — fetches all transactions
 - GET /admin/topups?status=PENDING — fetches pending top-ups
-- PATCH /admin/topups/{transaction_id} — approves or rejects a top-up
+- PATCH /admin/topups/{transaction_id} { action: "APPROVE" | "REJECT", rejection_reason? } — processes a top-up
 - GET /admin/withdrawals?status=PENDING — fetches pending withdrawals
-- PATCH /admin/withdrawals/{transaction_id} — processes a withdrawal
-- POST /admin/wallets/{user_id}/adjust — manual wallet adjustment
+- PATCH /admin/withdrawals/{transaction_id} { action: "APPROVE" | "REJECT", rejection_reason? } — processes a withdrawal
 
 ### User Interactions
-- Clicking Approve on a top-up calls PATCH /admin/topups/{id} with action=APPROVE
-- Clicking Reject opens a modal for rejection_reason, then calls PATCH with action=REJECT
-- Same flow for withdrawals
-- Manual adjustment form: fills user_id, direction, amount, reason; submitting calls POST /adjust
+- Clicking Approve immediately calls PATCH with action=APPROVE; row updates in-place on success
+- Clicking Reject opens a modal for rejection_reason (required), then calls PATCH with action=REJECT
+- Same flow for both top-ups and withdrawals
+
+### Edge Cases and States
+- Loading state: Row skeletons
+- No pending items: EmptyState per tab
+- Already processed (409): Error toast "Transaksi sudah diproses"
+- Fetch error: Inline error with retry
+
+---
+
+## Page: All Transactions & Manual Adjustment (Admin)
+- **URL:** /admin/wallet/transactions
+- **Access:** ADMIN
+- **Purpose:** Monitor all platform transactions with filtering/pagination, and perform manual wallet adjustments.
+
+### Layout and Components
+Admin layout with Navbar and Sidebar:
+- Filter row: type (dropdown), status (dropdown), user_id (text), date_from (date), date_to (date), min_amount (number)
+- Transaction table: transaction_id, user_id, type, direction, amount, status, description, created_at
+- Pagination controls
+- Manual Adjustment section (collapsible panel or separate card below the table):
+  - Fields: user_id (UUID), direction (CREDIT/DEBIT radio), amount, reason (max 500 chars), reference_id (optional, max 36 chars)
+  - Submit calls POST /admin/wallets/{user_id}/adjust
+
+### Reusable Components Used
+- Navbar
+- Sidebar
+- TransactionRow
+- Pagination
+- LoadingSpinner / SkeletonLoader
+- EmptyState
+- Toast / Notification
+
+### API / Service Calls
+- GET /admin/transactions?type=&status=&user_id=&date_from=&date_to=&min_amount=&page=&limit= — fetches all transactions with summary
+- POST /admin/wallets/{user_id}/adjust { direction, amount, reason, reference_id? } — manual wallet adjustment
+
+### User Interactions
+- Filter changes reset page to 1 and trigger a new fetch
+- Pagination navigates through results
+- Adjustment form: fills fields and submits; success toast shows new_balance; form resets
 
 ### Edge Cases and States
 - Loading state: Transaction table skeletons
-- No pending items: EmptyState on pending tabs
-- Already processed: Error toast "Transaksi sudah diproses"
-- DEBIT adjustment would cause negative balance: Error from backend with current_balance and debit_amount
+- No results: EmptyState
+- DEBIT adjustment would cause negative balance: Error from backend with current_balance and debit_amount shown inline
+- Wallet not found (404): Error toast "Dompet pengguna tidak ditemukan"
 
 ---
 

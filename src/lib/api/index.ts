@@ -9,3 +9,4 @@
 export * from './client';
 export * from './inventory';
 export * from './orders';
+export * from './payment';

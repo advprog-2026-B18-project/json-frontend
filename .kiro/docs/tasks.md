@@ -143,34 +143,36 @@
 ## Module 4: Wallet and Transactions
 
 ### Phase 1: Setup and Models
-- [ ] TASK-401: Define TypeScript types for Payment Service responses: WalletResponse, AdminWalletResponse, TransactionResponse, TransactionDetailResponse, TopUpResponse, WithdrawalResponse, AdminTransactionListResponse, AdjustmentResponse. NOTE: WalletResponse (from GET /wallets/me) only has `wallet_id`, `user_id`, `balance` — no escrow or lifetime fields. AdminWalletResponse (from GET /admin/wallets/{id}) has the full object including `escrow_balance`, `total_topup_lifetime`, `total_withdrawal_lifetime`, `created_at`, `updated_at`. These are two distinct types. | Est: 1h
-- [ ] TASK-402: Note RFC 9457 Problem Details error format for Payment Service — all errors use { type, title, status, detail, instance } not { success, message } | Est: 0.5h
+- [x] TASK-401: Define TypeScript types for Payment Service responses: WalletResponse, AdminWalletResponse, TransactionResponse, TransactionDetailResponse, TopUpResponse, WithdrawalResponse, AdminTransactionListResponse, AdjustmentResponse. NOTE: WalletResponse (from GET /wallets/me) only has `wallet_id`, `user_id`, `balance` — no escrow or lifetime fields. AdminWalletResponse (from GET /admin/wallets/{id}) has the full object including `escrow_balance`, `total_topup_lifetime`, `total_withdrawal_lifetime`, `created_at`, `updated_at`. These are two distinct types. | Est: 1h
+- [x] TASK-402: Note RFC 9457 Problem Details error format for Payment Service — all errors use { type, title, status, detail, instance } not { success, message } | Est: 0.5h
 
 ### Phase 2: Service Layer
-- [ ] TASK-403: Implement src/services/payment.service.ts — getMyWallet() GET /wallets/me | Est: 0.5h
-- [ ] TASK-404: Implement payment.service.ts — getTransactions() GET /transactions | Est: 0.5h
-- [ ] TASK-405: Implement payment.service.ts — getTransaction(transactionId) GET /transactions/{transactionId} | Est: 0.5h
-- [ ] TASK-406: Implement payment.service.ts — getTopUps() GET /topups | Est: 0.5h
-- [ ] TASK-407: Implement payment.service.ts — createTopUp(amount, paymentMethod, bankCode, idempotencyKey) POST /topups — NOTE: all fields snake_case, idempotency_key must be unique | Est: 1h
-- [ ] TASK-408: Implement payment.service.ts — getWithdrawals() GET /withdrawals | Est: 0.5h
-- [ ] TASK-409: Implement payment.service.ts — createWithdrawal(amount, bankAccountId, idempotencyKey, notes) POST /withdrawals — NOTE: all fields snake_case | Est: 1h
-- [ ] TASK-410: Implement payment.service.ts — adminGetTopUps(status) GET /admin/topups | Est: 0.5h
-- [ ] TASK-411: Implement payment.service.ts — adminProcessTopUp(transactionId, action, rejectionReason) PATCH /admin/topups/{transaction_id} | Est: 0.5h
-- [ ] TASK-412: Implement payment.service.ts — adminGetWithdrawals(status) GET /admin/withdrawals | Est: 0.5h
-- [ ] TASK-413: Implement payment.service.ts — adminProcessWithdrawal(transactionId, action, rejectionReason) PATCH /admin/withdrawals/{transaction_id} | Est: 0.5h
-- [ ] TASK-414: Implement payment.service.ts — adminGetAllTransactions(params) GET /admin/transactions | Est: 0.5h
-- [ ] TASK-415: Implement payment.service.ts — adminGetWallet(userId) GET /admin/wallets/{userQueryId} | Est: 0.5h
-- [ ] TASK-416: Implement payment.service.ts — adminCreateWallet(userId) POST /admin/wallets/{userId} | Est: 0.5h
-- [ ] TASK-417: Implement payment.service.ts — adminAdjustWallet(userId, direction, amount, reason, referenceId) POST /admin/wallets/{user_id}/adjust | Est: 0.5h
+- [x] TASK-403: Implement src/services/payment.service.ts — getMyWallet() GET /wallets/me | Est: 0.5h
+- [x] TASK-404: Implement payment.service.ts — getTransactions() GET /transactions | Est: 0.5h
+- [x] TASK-405: Implement payment.service.ts — getTransaction(transactionId) GET /transactions/{transactionId} | Est: 0.5h
+- [x] TASK-406: Implement payment.service.ts — getTopUps() GET /topups | Est: 0.5h
+- [x] TASK-407: Implement payment.service.ts — createTopUp(amount, paymentMethod, bankCode, idempotencyKey) POST /topups — NOTE: all fields snake_case, idempotency_key must be unique | Est: 1h
+- [x] TASK-408: Implement payment.service.ts — getWithdrawals() GET /withdrawals | Est: 0.5h
+- [x] TASK-409: Implement payment.service.ts — createWithdrawal(amount, bankAccountId, idempotencyKey, notes) POST /withdrawals — NOTE: all fields snake_case | Est: 1h
+- [x] TASK-410: Implement payment.service.ts — adminGetTopUps(status) GET /admin/topups | Est: 0.5h
+- [x] TASK-411: Implement payment.service.ts — adminProcessTopUp(transactionId, action, rejectionReason) PATCH /admin/topups/{transaction_id} | Est: 0.5h
+- [x] TASK-412: Implement payment.service.ts — adminGetWithdrawals(status) GET /admin/withdrawals | Est: 0.5h
+- [x] TASK-413: Implement payment.service.ts — adminProcessWithdrawal(transactionId, action, rejectionReason) PATCH /admin/withdrawals/{transaction_id} | Est: 0.5h
+- [x] TASK-414: Implement payment.service.ts — adminGetAllTransactions(params) GET /admin/transactions | Est: 0.5h
+- [x] TASK-415: Implement payment.service.ts — adminGetWallet(userId) GET /admin/wallets/{userQueryId} | Est: 0.5h
+- [x] TASK-416: Implement payment.service.ts — adminCreateWallet(userId) POST /admin/wallets/{userId} | Est: 0.5h
+- [x] TASK-417: Implement payment.service.ts — adminAdjustWallet(userId, direction, amount, reason, referenceId) POST /admin/wallets/{user_id}/adjust | Est: 0.5h
 
 ### Phase 3: API Integration
-- [ ] TASK-418: ⚠️ CONCURRENCY: Implement idempotency_key generation in payment.service.ts using crypto.randomUUID() for top-up and withdrawal requests | Est: 0.5h
+- [x] TASK-418: ⚠️ CONCURRENCY: Implement idempotency_key generation in payment.service.ts using crypto.randomUUID() for top-up and withdrawal requests | Est: 0.5h
 - [ ] TASK-419: ⚠️ CONCURRENCY: Implement wallet balance pre-check for the "Bayar Sekarang" button on the order detail page (/orders/[orderId]) — fetch GET /wallets/me and compare balance to order total_price before enabling the pay button. NOTE: This check is on the ORDER DETAIL page, not the checkout form submission. The checkout page (POST /orders) creates the order first; the pay button appears on the subsequent order detail page. | Est: 1h
 
 ### Phase 4: Frontend Pages and Components
-- [ ] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up form, transaction history with filter tabs | Est: 4h
-- [ ] TASK-421: Build /jastiper/wallet page (src/app/jastiper/wallet/page.tsx) — wallet balance, withdrawal form, earnings history | Est: 3h
-- [ ] TASK-422: Build /admin/wallet page (src/app/admin/wallet/page.tsx) — financial summary, pending top-ups/withdrawals, all transactions, manual adjustment | Est: 5h
+- [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up form, transaction history with filter tabs | Est: 4h
+- [x] TASK-421: Build /jastiper/wallet page (src/app/jastiper/wallet/page.tsx) — wallet balance, withdrawal form, earnings history | Est: 3h
+- [ ] TASK-422a: Build /admin/wallet/summary page (src/app/admin/wallet/summary/page.tsx) — platform financial summary cards: total_topup, total_withdrawal, total_payment, total_refund, total_earning, platform_escrow_balance; fetched from GET /admin/transactions summary field | Est: 2h
+- [ ] TASK-422b: Build /admin/wallet/requests page (src/app/admin/wallet/requests/page.tsx) — pending top-up requests list with Approve/Reject actions (PATCH /admin/topups/{id}), pending withdrawal requests list with Approve/Reject actions (PATCH /admin/withdrawals/{id}); reject opens modal for rejection_reason | Est: 2h
+- [ ] TASK-422c: Build /admin/wallet/transactions page (src/app/admin/wallet/transactions/page.tsx) — all transactions table with filters (type, status, user_id, date_from, date_to, min_amount) and pagination (GET /admin/transactions); manual wallet adjustment form: user_id, direction (CREDIT/DEBIT), amount, reason, reference_id (POST /admin/wallets/{user_id}/adjust) | Est: 2h
 
 ### Phase 5: Integration and Testing
 - [ ] TASK-423: ⚠️ CONCURRENCY: Test wallet deduction during checkout — verify two concurrent checkouts exceeding balance result in exactly one success | Est: 2h
