@@ -435,7 +435,7 @@ export async function uploadImageS3(token: string, file: File): Promise<string> 
 
   const baseUrl = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || 'http://localhost:8083';
 
-  const res = await fetch(`${baseUrl}/internal/products/images/upload`, {
+  const res = await fetch(`${baseUrl}/api/products/images/upload`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
