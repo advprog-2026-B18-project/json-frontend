@@ -171,45 +171,51 @@ export async function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
 // Per-service convenience factories
 // ---------------------------------------------------------------------------
 
-function getEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) throw new Error(`Environment variable ${key} is not set.`);
-  return value;
-}
-
 type ServiceRequestOptions = Omit<ApiRequestOptions, 'baseUrl' | 'errorShape' | 'path'>;
 
 export function authRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_AUTH_SERVICE_URL is not set.');
+  
   return apiRequest<T>({
     ...options,
-    baseUrl: getEnv('NEXT_PUBLIC_AUTH_SERVICE_URL'),
+    baseUrl,
     path,
     errorShape: 'envelope',
   });
 }
 
 export function inventoryRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
+  const baseUrl = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_INVENTORY_SERVICE_URL is not set.');
+  
   return apiRequest<T>({
     ...options,
-    baseUrl: getEnv('NEXT_PUBLIC_INVENTORY_SERVICE_URL'),
+    baseUrl,
     path,
     errorShape: 'envelope',
   });
 }
 
 export function orderRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
+  const baseUrl = process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_ORDER_SERVICE_URL is not set.');
+  
   return apiRequest<T>({
     ...options,
-    baseUrl: getEnv('NEXT_PUBLIC_ORDER_SERVICE_URL'),
+    baseUrl,
     path,
     errorShape: 'envelope',
   });
 }
 
 export function paymentRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
+  const baseUrl = process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL;
+  if (!baseUrl) throw new Error('NEXT_PUBLIC_PAYMENT_SERVICE_URL is not set.');
+  
   return apiRequest<T>({
     ...options,
-    baseUrl: getEnv('NEXT_PUBLIC_PAYMENT_SERVICE_URL'),
+    baseUrl,
     path,
     errorShape: 'problem-details',
   });
@@ -235,15 +241,36 @@ export function apiFetchFrom<T>(
     headers?: Record<string, string>;
   }
 ): Promise<T> {
-  const serviceConfig: Record<ApiService, { envKey: string; errorShape: ApiErrorShape }> = {
-    auth: { envKey: 'NEXT_PUBLIC_AUTH_SERVICE_URL', errorShape: 'envelope' },
-    payment: { envKey: 'NEXT_PUBLIC_PAYMENT_SERVICE_URL', errorShape: 'problem-details' },
-    inventory: { envKey: 'NEXT_PUBLIC_INVENTORY_SERVICE_URL', errorShape: 'envelope' },
-    orders: { envKey: 'NEXT_PUBLIC_ORDER_SERVICE_URL', errorShape: 'envelope' },
-  };
-  const { envKey, errorShape } = serviceConfig[service];
+  let baseUrl: string | undefined;
+  let errorShape: ApiErrorShape;
+
+  switch (service) {
+    case 'auth':
+      baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+      errorShape = 'envelope';
+      break;
+    case 'payment':
+      baseUrl = process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL;
+      errorShape = 'problem-details';
+      break;
+    case 'inventory':
+      baseUrl = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL;
+      errorShape = 'envelope';
+      break;
+    case 'orders':
+      baseUrl = process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+      errorShape = 'envelope';
+      break;
+    default:
+      throw new Error(`Unknown service: ${service}`);
+  }
+
+  if (!baseUrl) {
+    throw new Error(`Environment variable for service ${service} is not set.`);
+  }
+
   return apiRequest<T>({
-    baseUrl: getEnv(envKey),
+    baseUrl,
     path,
     method: (options?.method as ApiRequestOptions['method']) ?? 'GET',
     body: options?.body,
