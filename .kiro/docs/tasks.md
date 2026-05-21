@@ -126,11 +126,11 @@
 
 ### Phase 4: Frontend Pages and Components
 - [x] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: Use camelCase ProductResponse fields for price display (`product.price`, `product.serviceFee`, `product.stock`, `product.productId`) since ProductResponse from GET /products/{id} uses camelCase. | Est: 4h
-- [ ] TASK-318: Build /orders page (src/app/orders/page.tsx) — purchase history with status filter tabs, pagination | Est: 2h
-- [ ] TASK-319: Build /orders/[orderId] page (src/app/orders/[orderId]/page.tsx) — order detail with status timeline, action buttons, rating forms | Est: 4h
-- [ ] TASK-320: Build /jastiper/orders page (src/app/jastiper/orders/page.tsx) — incoming orders with action buttons | Est: 3h
-- [ ] TASK-321: Build /jastiper/orders/[orderId] page (src/app/jastiper/orders/[orderId]/page.tsx) — jastiper order detail with mark purchased/shipped/cancel actions | Est: 3h
-- [ ] TASK-322: Build /admin/orders page (src/app/admin/orders/page.tsx) — all orders with filters and cancel action | Est: 3h
+- [x] TASK-318: Build /orders page (src/app/orders/page.tsx) — purchase history with status filter tabs, pagination | Est: 2h
+- [x] TASK-319: Build /orders/[orderId] page (src/app/orders/[orderId]/page.tsx) — order detail with status timeline, action buttons, rating forms | Est: 4h
+- [x] TASK-320: Build /jastiper/orders page (src/app/jastiper/orders/page.tsx) — incoming orders with action buttons | Est: 3h
+- [x] TASK-321: Build /jastiper/orders/[orderId] page (src/app/jastiper/orders/[orderId]/page.tsx) — jastiper order detail with mark purchased/shipped/cancel actions | Est: 3h
+- [x] TASK-322: Build /admin/orders page (src/app/admin/orders/page.tsx) — all orders with /admin/orders endpoint, filters, search, force cancel | Est: 3h
 
 ### Phase 5: Integration and Testing
 - [ ] TASK-323: ⚠️ CONCURRENCY: Test checkout stock reservation — verify two concurrent requests for last unit result in exactly one success | Est: 2h
@@ -165,7 +165,7 @@
 
 ### Phase 3: API Integration
 - [x] TASK-418: ⚠️ CONCURRENCY: Implement idempotency_key generation in payment.service.ts using crypto.randomUUID() for top-up and withdrawal requests | Est: 0.5h
-- [ ] TASK-419: ⚠️ CONCURRENCY: Implement wallet balance pre-check for the "Bayar Sekarang" button on the order detail page (/orders/[orderId]) — fetch GET /wallets/me and compare balance to order total_price before enabling the pay button. NOTE: This check is on the ORDER DETAIL page, not the checkout form submission. The checkout page (POST /orders) creates the order first; the pay button appears on the subsequent order detail page. | Est: 1h
+- [x] TASK-419: ⚠️ CONCURRENCY: Implement wallet balance pre-check for the "Bayar Sekarang" button on the order detail page (/orders/[orderId]) — fetch GET /wallets/me and compare balance to order total_price before enabling the pay button. NOTE: This check is on the ORDER DETAIL page, not the checkout form submission. The checkout page (POST /orders) creates the order first; the pay button appears on the subsequent order detail page. | Est: 1h
 
 ### Phase 4: Frontend Pages and Components
 - [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up form, transaction history with filter tabs | Est: 4h
@@ -187,26 +187,26 @@
 ## Module 5: Shared Components and Layout
 
 ### Phase 4: Frontend Pages and Components
-- [ ] TASK-501: Build Navbar component (src/components/Navbar.tsx) — role-based nav links, user avatar dropdown, wallet balance, guest buttons | Est: 3h
+- [x] TASK-501: Build Navbar component (src/components/Navbar.tsx) — role-based nav links, user avatar dropdown, wallet balance, guest buttons | Est: 3h
 - [ ] TASK-502: Build Sidebar component (src/components/Sidebar.tsx) — jastiper and admin navigation, active state, mobile collapse | Est: 2h
 - [ ] TASK-503: Build ProductCard component (src/components/ProductCard.tsx) — product image, name, price, jastiper info, rating, stock, status badge | Est: 2h
-- [ ] TASK-504: Build OrderCard component (src/components/OrderCard.tsx) — order summary with role-based action buttons | Est: 2h
-- [ ] TASK-505: Build StatusBadge component (src/components/StatusBadge.tsx) — color-coded pill for all status values | Est: 1h
+- [x] TASK-504: Build OrderCard component (src/components/OrderCard.tsx) — order summary with role-based action buttons | Est: 2h
+- [x] TASK-505: Build StatusBadge component (src/components/StatusBadge.tsx) — color-coded pill for all status values | Est: 1h
 - [ ] TASK-506: Build WalletSummary component (src/components/WalletSummary.tsx) — balance display, escrow note, top-up/withdraw buttons | Est: 1h
-- [ ] TASK-507: Build RatingStars component (src/components/RatingStars.tsx) — interactive and read-only star rating display | Est: 1.5h
-- [ ] TASK-509: Build KYCStatusBanner component (src/components/KYCStatusBanner.tsx) — contextual banner for all KYC statuses | Est: 1h
-- [ ] TASK-510: Build TransactionRow component (src/components/TransactionRow.tsx) — transaction list item with type, amount, direction, status | Est: 1h
-- [ ] TASK-511: Build SearchBar component (src/components/SearchBar.tsx) — debounced search input with clear button | Est: 1h
-- [ ] TASK-512: Build EmptyState component (src/components/EmptyState.tsx) — centered empty state with icon, title, description, action | Est: 0.5h
-- [ ] TASK-513: Build LoadingSpinner component (src/components/LoadingSpinner.tsx) — animated circular spinner | Est: 0.5h
-- [ ] TASK-514: Build SkeletonLoader component (src/components/SkeletonLoader.tsx) — animated placeholder blocks for card, row, text, avatar variants | Est: 1h
-- [ ] TASK-515: Build ConfirmModal component (src/components/ConfirmModal.tsx) — accessible modal dialog with confirm/cancel, loading state, optional children | Est: 1.5h
-- [ ] TASK-516: Build Pagination component (src/components/Pagination.tsx) — page navigation with ellipsis, item count display | Est: 1h
-- [ ] TASK-517: Build Toast/Notification component (src/components/Toast.tsx) — auto-dismissing toast with type variants, stacking | Est: 1.5h
+- [x] TASK-507: Build RatingStars component (src/components/RatingStars.tsx) — interactive and read-only star rating display | Est: 1.5h
+- [x] TASK-509: Build KYCStatusBanner component (src/components/KYCStatusBanner.tsx) — contextual banner for all KYC statuses | Est: 1h
+- [x] TASK-510: Build TransactionRow component (src/components/TransactionRow.tsx) — transaction list item with type, amount, direction, status | Est: 1h
+- [x] TASK-511: Build SearchBar component (src/components/SearchBar.tsx) — debounced search input with clear button | Est: 1h
+- [x] TASK-512: Build EmptyState component (src/components/EmptyState.tsx) — centered empty state with icon, title, description, action | Est: 0.5h
+- [x] TASK-513: Build LoadingSpinner component (src/components/LoadingSpinner.tsx) — animated circular spinner | Est: 0.5h
+- [x] TASK-514: Build SkeletonLoader component (src/components/SkeletonLoader.tsx) — animated placeholder blocks for card, row, text, avatar variants | Est: 1h
+- [x] TASK-515: Build ConfirmModal component (src/components/ConfirmModal.tsx) — accessible modal dialog with confirm/cancel, loading state, optional children | Est: 1.5h
+- [x] TASK-516: Build Pagination component (src/components/Pagination.tsx) — page navigation with ellipsis, item count display | Est: 1h
+- [x] TASK-517: Build Toast/Notification component (src/components/Toast.tsx) — auto-dismissing toast with type variants, stacking | Est: 1.5h
 
 ### Phase 5: Integration and Testing
-- [ ] TASK-518: Build /dashboard page (src/app/dashboard/page.tsx) — titiper dashboard with stats, wallet, recent orders, KYC banner | Est: 3h
-- [ ] TASK-519: Build /jastiper/dashboard page (src/app/jastiper/dashboard/page.tsx) — jastiper dashboard with sales stats, wallet, incoming orders | Est: 3h
+- [x] TASK-518: Build /dashboard page (src/app/dashboard/page.tsx) — titiper dashboard with stats, wallet, recent orders, KYC banner | Est: 3h
+- [x] TASK-519: Build /jastiper/dashboard page (src/app/jastiper/dashboard/page.tsx) — jastiper dashboard with sales stats, wallet, incoming orders | Est: 3h
 - [ ] TASK-520: Build /admin/dashboard page (src/app/admin/dashboard/page.tsx) — platform stats, pending actions, financial summary | Est: 3h
 - [ ] TASK-523: Integration test: verify all pages render correctly with loading, empty, and error states | Est: 3h
 - [ ] TASK-524: Accessibility audit: verify all interactive components have proper aria labels, roles, and keyboard navigation | Est: 2h
