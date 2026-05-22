@@ -3,8 +3,6 @@
  *
  * Base URL: NEXT_PUBLIC_INVENTORY_SERVICE_URL (Spring Boot, :8083)
  * Error shape: { success, message, data, errors } envelope
- *
- * Backend contracts: .kiro/steering/backend-contracts-inventory-service.md
  */
 
 import { inventoryRequest } from './api-client';
@@ -12,45 +10,16 @@ import { inventoryRequest } from './api-client';
 export { isApiError } from './api-client';
 
 // ---------------------------------------------------------------------------
-// TASK-201 + TASK-202: Types
-//
-// CRITICAL NAMING INCONSISTENCY — two different JSON naming strategies:
-//
-//   ProductResponse  → camelCase  (productId, originCountry, purchaseDate, serviceFee, weightGram)
-//   CategoryResponse → snake_case (category_id, product_count, slug)
-//
-// This inconsistency exists in the backend and cannot be changed.
-// ProductResponse uses no @JsonNaming annotation (defaults to camelCase).
-// CategoryResponse uses @JsonNaming(SnakeCaseStrategy).
-// Frontend TypeScript types MUST reflect this difference exactly.
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Pagination shapes
-//
-// Inventory service pagination: { page, limit, total, total_pages }
-//   - uses "total" (not "total_items")
-//
-// Order service pagination:     { total_items, page, limit, total_pages }
-//   - uses "total_items" (not "total")
-//
-// These are DIFFERENT shapes. Define separate named types for each.
 // ---------------------------------------------------------------------------
 
-/** Pagination shape returned by the Inventory Service */
 export type InventoryPagination = {
   page: number;
   limit: number;
-  /** Total number of items — NOTE: "total", not "total_items" */
   total: number;
   total_pages: number;
 };
 
-/**
- * Pagination shape returned by the Order Service.
- * Exported here for reference — defined in order.service.ts as well.
- * NOTE: uses "total_items", not "total".
- */
 export type OrderPagination = {
   total_items: number;
   page: number;
@@ -59,15 +28,11 @@ export type OrderPagination = {
 };
 
 // ---------------------------------------------------------------------------
-// CategoryResponse — snake_case (via @JsonNaming(SnakeCaseStrategy))
+// CategoryResponse
 // ---------------------------------------------------------------------------
 
-/**
- * CategoryResponse — all fields are snake_case.
- * Returned by GET /categories, POST /admin/categories, PATCH /admin/categories/{id}.
- */
 export type CategoryResponse = {
-  category_id: number;   // integer, NOT a UUID
+  category_id: number;
   name: string;
   slug: string;
   description: string | null;
@@ -75,15 +40,12 @@ export type CategoryResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// ProductResponse — camelCase (no @JsonNaming annotation)
+// ProductResponse
 // ---------------------------------------------------------------------------
 
 export type ProductStatus = 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN' | 'REMOVED_BY_ADMIN';
+export type ShoppingMode = 'LIVE' | 'PRE_ORDER' | 'FLASH_SALE';
 
-/**
- * Jastiper info embedded in ProductResponse.
- * All fields are camelCase.
- */
 export type ProductJastiper = {
   userId: string;
   username: string | null;
@@ -93,36 +55,27 @@ export type ProductJastiper = {
   totalOrders: number;
 };
 
-/**
- * Stats embedded in ProductResponse.
- * All fields are camelCase.
- */
 export type ProductStats = {
   totalOrders: number;
   totalReviews: number;
   avgRating: number;
 };
 
-/**
- * ProductResponse — all fields are camelCase.
- *
- * IMPORTANT: This is different from CategoryResponse which uses snake_case.
- * Always access fields as: product.productId, product.originCountry,
- * product.purchaseDate, product.serviceFee, product.weightGram — NOT
- * product.product_id, product.origin_country, etc.
- */
 export type ProductResponse = {
   productId: string;
   name: string;
   description: string;
-  price: number;           // IDR integer, no decimals
+  price: number;
   stock: number;
   status: ProductStatus;
+  mode: ShoppingMode;
+  flashSaleStart: string | null;
+  flashSaleEnd: string | null;
   originCountry: string;
-  purchaseDate: string;    // YYYY-MM-DD (LocalDate, not full ISO datetime)
+  purchaseDate: string;
   weightGram: number;
-  serviceFee: number;      // IDR integer, no decimals
-  images: string[];        // max 5 URLs
+  serviceFee: number;
+  images: string[];
   tags: string[];
   category: { id: number; name: string } | null;
   jastiper: ProductJastiper;
@@ -133,39 +86,27 @@ export type ProductResponse = {
 // Paginated response wrappers
 // ---------------------------------------------------------------------------
 
-/**
- * PaginatedProductResponse — wraps ProductResponse[] with InventoryPagination.
- * Returned by GET /products, GET /products/my, GET /jastipers/{username}/products,
- * GET /admin/products.
- */
 export type PaginatedProductResponse = {
   data: ProductResponse[];
   pagination: InventoryPagination;
 };
 
-/** @deprecated Use PaginatedProductResponse instead */
 export type PaginatedProducts = PaginatedProductResponse;
 
 // ---------------------------------------------------------------------------
 // StockReservationResponse
-// Returned by POST /internal/products/{id}/stock/reserve
-// NOTE: This is an internal endpoint — never called from the frontend.
-//       Defined here for completeness and type documentation only.
-//       The response is NOT wrapped in the standard ApiResponse envelope.
 // ---------------------------------------------------------------------------
 
-export type StockReservationStatus = 'RESERVED';
+export type StockReservationStatus = 'PENDING' | 'CONFIRMED' | 'RELEASED';
 
-/**
- * StockReservationResponse — raw JSON, NOT wrapped in ApiResponse envelope.
- * Fields are camelCase (consistent with ProductResponse).
- */
 export type StockReservationResponse = {
-  productId: string;
-  reservedQuantity: number;
-  remainingStock: number;
   reservationId: string;
+  productId: string;
+  orderId: string;
+  quantity: number;
   status: StockReservationStatus;
+  createdAt: string;
+  expiresAt: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -174,10 +115,17 @@ export type StockReservationResponse = {
 
 export type ModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE' | 'ACTIVATE';
 
+export type ModerationLogResponse = {
+  log_id: string;
+  product_id: string;
+  admin_id: string;
+  action: ModerationAction;
+  reason: string;
+  created_at: string;
+};
+
 // ---------------------------------------------------------------------------
 // TASK-203: getCategories
-// GET /categories
-// Public — no token required
 // ---------------------------------------------------------------------------
 
 export async function getCategories(): Promise<CategoryResponse[]> {
@@ -186,9 +134,6 @@ export async function getCategories(): Promise<CategoryResponse[]> {
 
 // ---------------------------------------------------------------------------
 // TASK-204: searchProducts
-// GET /products
-// Public — no token required
-// Only returns ACTIVE products. HIDDEN and REMOVED_BY_ADMIN are filtered server-side.
 // ---------------------------------------------------------------------------
 
 export type SearchProductsParams = {
@@ -198,8 +143,8 @@ export type SearchProductsParams = {
   maxPrice?: number;
   categoryId?: number;
   origin_country?: string;
-  purchase_date_from?: string; // YYYY-MM-DD
-  purchase_date_to?: string;   // YYYY-MM-DD
+  purchase_date_from?: string;
+  purchase_date_to?: string;
   page?: number;
   limit?: number;
   sortBy?: 'created_at' | 'purchase_date' | 'rating';
@@ -207,7 +152,7 @@ export type SearchProductsParams = {
 };
 
 export async function searchProducts(
-  params?: SearchProductsParams
+    params?: SearchProductsParams
 ): Promise<PaginatedProductResponse> {
   const query = new URLSearchParams();
   if (params) {
@@ -223,22 +168,17 @@ export async function searchProducts(
 
 // ---------------------------------------------------------------------------
 // TASK-205: getProduct
-// GET /products/{id}
-// Public — no token required
 // ---------------------------------------------------------------------------
 
 export async function getProduct(productId: string): Promise<ProductResponse> {
   return inventoryRequest<ProductResponse>(
-    `/products/${encodeURIComponent(productId)}`,
-    { method: 'GET' }
+      `/products/${encodeURIComponent(productId)}`,
+      { method: 'GET' }
   );
 }
 
 // ---------------------------------------------------------------------------
 // TASK-206: getJastiperCatalog
-// GET /jastipers/{username}/products
-// Public — no token required
-// Only returns ACTIVE products.
 // ---------------------------------------------------------------------------
 
 export type JastiperCatalogParams = {
@@ -253,8 +193,8 @@ export type JastiperCatalogParams = {
 };
 
 export async function getJastiperCatalog(
-  username: string,
-  params?: JastiperCatalogParams
+    username: string,
+    params?: JastiperCatalogParams
 ): Promise<PaginatedProductResponse> {
   const query = new URLSearchParams();
   if (params) {
@@ -264,17 +204,13 @@ export async function getJastiperCatalog(
   }
   const qs = query.toString();
   return inventoryRequest<PaginatedProductResponse>(
-    `/jastipers/${encodeURIComponent(username)}/products${qs ? `?${qs}` : ''}`,
-    { method: 'GET' }
+      `/jastipers/${encodeURIComponent(username)}/products${qs ? `?${qs}` : ''}`,
+      { method: 'GET' }
   );
 }
 
 // ---------------------------------------------------------------------------
 // TASK-207: createProduct
-// POST /products
-// Protected — JASTIPER role required
-// Returns HTTP 201
-// Request body uses snake_case field names.
 // ---------------------------------------------------------------------------
 
 export type CreateProductInput = {
@@ -282,18 +218,21 @@ export type CreateProductInput = {
   description: string;
   price: number;
   stock: number;
+  mode?: ShoppingMode;
+  flash_sale_start?: string | null;
+  flash_sale_end?: string | null;
   origin_country: string;
-  purchase_date: string;   // YYYY-MM-DD
-  category_id?: number;
-  weight_gram?: number;
+  purchase_date: string;
+  category_id?: number | null;
+  weight_gram?: number | null;
   service_fee?: number;
-  images?: string[];       // max 5
+  images?: string[];
   tags?: string[];
 };
 
 export async function createProduct(
-  token: string,
-  input: CreateProductInput
+    token: string,
+    input: CreateProductInput
 ): Promise<ProductResponse> {
   return inventoryRequest<ProductResponse>('/products', {
     method: 'POST',
@@ -303,11 +242,7 @@ export async function createProduct(
 }
 
 // ---------------------------------------------------------------------------
-// TASK-208: updateProduct
-// PATCH /products/{id}
-// Protected — JASTIPER role required (must own the product)
-// Request body uses camelCase field names (matches PATCH contract).
-// Jastiper can set status to HIDDEN but NOT to REMOVED_BY_ADMIN.
+// TASK-208: updateProduct 
 // ---------------------------------------------------------------------------
 
 export type UpdateProductInput = Partial<{
@@ -315,49 +250,43 @@ export type UpdateProductInput = Partial<{
   description: string;
   price: number;
   stock: number;
-  /** Jastiper can set ACTIVE, OUT_OF_STOCK, or HIDDEN — not REMOVED_BY_ADMIN */
-  status: 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN';
-  categoryId: number;
-  originCountry: string;
-  purchaseDate: string;    // YYYY-MM-DD
-  serviceFee: number;
-  weightGram: number;
+  status: ProductStatus;
+  mode: ShoppingMode;
+  flash_sale_start: string | null;
+  flash_sale_end: string | null;
+  category_id: number | null;
+  origin_country: string;
+  purchase_date: string;
+  service_fee: number;
+  weight_gram: number | null;
   images: string[];
   tags: string[];
 }>;
 
 export async function updateProduct(
-  token: string,
-  productId: string,
-  input: UpdateProductInput
+    token: string,
+    productId: string,
+    input: UpdateProductInput
 ): Promise<ProductResponse> {
   return inventoryRequest<ProductResponse>(
-    `/products/${encodeURIComponent(productId)}`,
-    { method: 'PATCH', token, body: input }
+      `/products/${encodeURIComponent(productId)}`,
+      { method: 'PATCH', token, body: input }
   );
 }
 
 // ---------------------------------------------------------------------------
 // TASK-209: deleteProduct
-// DELETE /products/{id}
-// Protected — JASTIPER role required (must own the product)
-// Soft-delete: sets deleted_at. Returns HTTP 200.
-// Blocked if product has active orders (HTTP 409 with active_orders array).
 // ---------------------------------------------------------------------------
 
 export async function deleteProduct(token: string, productId: string): Promise<void> {
   return inventoryRequest<void>(
-    `/products/${encodeURIComponent(productId)}`,
-    { method: 'DELETE', token }
+      `/products/${encodeURIComponent(productId)}`,
+      { method: 'DELETE', token }
   );
 }
 
 // ---------------------------------------------------------------------------
 // TASK-210: getMyProducts
-// GET /products/my
-// Protected — JASTIPER role required
-// Returns ALL statuses including HIDDEN and REMOVED_BY_ADMIN.
-// Uses Spring Pageable: page is 0-based internally, pass page number as-is.
 // ---------------------------------------------------------------------------
 
 export type MyCatalogParams = {
@@ -365,12 +294,12 @@ export type MyCatalogParams = {
   status?: ProductStatus;
   page?: number;
   size?: number;
-  sort?: string; // e.g. 'createdAt,desc'
+  sort?: string;
 };
 
 export async function getMyProducts(
-  token: string,
-  params?: MyCatalogParams
+    token: string,
+    params?: MyCatalogParams
 ): Promise<PaginatedProductResponse> {
   const query = new URLSearchParams();
   if (params) {
@@ -385,30 +314,24 @@ export async function getMyProducts(
   });
 }
 
-/** @deprecated Use getMyProducts instead */
 export const getMyCatalog = getMyProducts;
 
 // ---------------------------------------------------------------------------
 // TASK-211: getMyProduct
-// GET /products/my/{id}
-// Protected — JASTIPER role required (must own the product)
 // ---------------------------------------------------------------------------
 
 export async function getMyProduct(
-  token: string,
-  productId: string
+    token: string,
+    productId: string
 ): Promise<ProductResponse> {
   return inventoryRequest<ProductResponse>(
-    `/products/my/${encodeURIComponent(productId)}`,
-    { method: 'GET', token }
+      `/products/my/${encodeURIComponent(productId)}`,
+      { method: 'GET', token }
   );
 }
 
 // ---------------------------------------------------------------------------
 // TASK-212: adminGetAllProducts
-// GET /admin/products
-// Protected — ADMIN role required
-// Returns ALL statuses including HIDDEN and REMOVED_BY_ADMIN.
 // ---------------------------------------------------------------------------
 
 export type AdminGetProductsParams = {
@@ -422,8 +345,8 @@ export type AdminGetProductsParams = {
 };
 
 export async function adminGetAllProducts(
-  token: string,
-  params?: AdminGetProductsParams
+    token: string,
+    params?: AdminGetProductsParams
 ): Promise<PaginatedProductResponse> {
   const query = new URLSearchParams();
   if (params) {
@@ -439,15 +362,7 @@ export async function adminGetAllProducts(
 }
 
 // ---------------------------------------------------------------------------
-// TASK-213: adminModerateProduct
-// PATCH /admin/products/{id}/moderate
-// Protected — ADMIN role required
-// action effects:
-//   HIDE    → status = HIDDEN
-//   REMOVE  → status = HIDDEN, deleted_at set (soft delete)
-//   RESTORE → status = ACTIVE, deleted_at cleared
-//   ACTIVATE → status = ACTIVE, deleted_at cleared
-// reason is required and logged in the moderation log.
+// TASK-213: adminModerateProduct 
 // ---------------------------------------------------------------------------
 
 export async function adminModerateProduct(
@@ -455,29 +370,27 @@ export async function adminModerateProduct(
   productId: string,
   action: ModerationAction,
   reason: string
-): Promise<ProductResponse> {
-  return inventoryRequest<ProductResponse>(
-    `/admin/products/${encodeURIComponent(productId)}/moderate`,
-    { method: 'PATCH', token, body: { action, reason } }
-  );
+) {
+  return inventoryRequest<ProductResponse>(`/admin/products/${productId}/moderate`, {
+    method: 'PATCH', 
+    token,
+    body: { action, reason }, 
+  });
 }
 
 // ---------------------------------------------------------------------------
 // TASK-214: adminCreateCategory
-// POST /admin/categories
-// Protected — ADMIN role required
-// Returns HTTP 201
 // ---------------------------------------------------------------------------
 
 export type CreateCategoryInput = {
-  name: string;           // required, max 100 chars
-  description?: string;   // optional, max 500 chars
-  slug?: string;          // optional, auto-generated from name if omitted
+  name: string;
+  description?: string;
+  slug?: string;
 };
 
 export async function adminCreateCategory(
-  token: string,
-  input: CreateCategoryInput
+    token: string,
+    input: CreateCategoryInput
 ): Promise<CategoryResponse> {
   return inventoryRequest<CategoryResponse>('/admin/categories', {
     method: 'POST',
@@ -488,18 +401,15 @@ export async function adminCreateCategory(
 
 // ---------------------------------------------------------------------------
 // TASK-215: adminUpdateCategory
-// PATCH /admin/categories/{id}
-// Protected — ADMIN role required
-// id is an integer (auto-increment), NOT a UUID.
 // ---------------------------------------------------------------------------
 
 export async function adminUpdateCategory(
-  token: string,
-  categoryId: number,
-  input: CreateCategoryInput
+    token: string,
+    categoryId: number,
+    input: CreateCategoryInput
 ): Promise<CategoryResponse> {
   return inventoryRequest<CategoryResponse>(`/admin/categories/${categoryId}`, {
-    method: 'PATCH',
+    method: 'PATCH', 
     token,
     body: input,
   });
@@ -507,17 +417,62 @@ export async function adminUpdateCategory(
 
 // ---------------------------------------------------------------------------
 // TASK-216: adminDeleteCategory
-// DELETE /admin/categories/{id}
-// Protected — ADMIN role required
-// Returns HTTP 409 with product_count if products are still assigned.
 // ---------------------------------------------------------------------------
 
 export async function adminDeleteCategory(
-  token: string,
-  categoryId: number
+    token: string,
+    categoryId: number
 ): Promise<void> {
   return inventoryRequest<void>(`/admin/categories/${categoryId}`, {
     method: 'DELETE',
     token,
   });
+}
+
+export async function uploadImageS3(token: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const baseUrl = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL || 'http://localhost:8083';
+
+  const res = await fetch(`${baseUrl}/api/products/images/upload`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData,
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Gagal upload gambar ke S3');
+  }
+
+  return json.data.image_url;
+}
+
+export async function reserveStock(
+    token: string,
+    productId: string,
+    orderId: string,
+    quantity: number
+): Promise<StockReservationResponse> {
+  return inventoryRequest<StockReservationResponse>(
+      `/products/${encodeURIComponent(productId)}/stock/reserve`,
+      {
+        method: 'POST',
+        token,
+        body: { order_id: orderId, quantity }
+      }
+  );
+}
+
+export async function getModerationLogs(
+    token: string,
+    productId: string
+): Promise<ModerationLogResponse[]> {
+  return inventoryRequest<ModerationLogResponse[]>(
+      `/admin/products/${encodeURIComponent(productId)}/moderation-logs`,
+      { method: 'GET', token }
+  );
 }
