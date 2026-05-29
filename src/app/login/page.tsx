@@ -32,6 +32,7 @@ function LoginForm() {
 
       // Store access token + user info in context.
       setAccessToken(data.refresh_token, data.user);
+      document.cookie = `refresh_token=${data.refresh_token}; path=/; secure; max-age=${data.expires_in}; samesite=lax`;
 
       const role = data.user?.role?.toUpperCase();
       if (role === 'ADMIN') {
