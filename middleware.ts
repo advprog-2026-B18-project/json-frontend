@@ -16,14 +16,18 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
   const isAdminRoute = pathname.startsWith('/admin');
-  const isJastiperRoute = pathname.startsWith('/jastiper');
+  const isJastiperProtectedRoute =
+      pathname.startsWith('/jastiper/orders') ||
+      pathname.startsWith('/jastiper/catalog') ||
+      pathname.startsWith('/jastiper/dashboard') ||
+      pathname.startsWith('/jastiper/wallet');
   const isGeneralProtectedRoute =
       pathname.startsWith('/dashboard') ||
       pathname.startsWith('/profile') ||
       pathname.startsWith('/orders') ||
       pathname.startsWith('/wallet');
 
-  if (isAdminRoute || isJastiperRoute || isGeneralProtectedRoute) {
+  if (isAdminRoute || isJastiperProtectedRoute || isGeneralProtectedRoute) {
     if (!token) return redirectToLogin(request);
 
     const payload = await verifyJwt(token);
@@ -33,7 +37,7 @@ export async function middleware(request: NextRequest) {
       return redirectToLogin(request);
     }
 
-    if (isJastiperRoute && !isJastiper(payload)) {
+    if (isJastiperProtectedRoute && !isJastiper(payload)) {
       return redirectToLogin(request);
     }
 
@@ -50,7 +54,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/jastiper/:path*',
+    '/jastiper/orders/:path*',
+    '/jastiper/catalog/:path*',
+    '/jastiper/dashboard/:path*',
+    '/jastiper/wallet/:path*',
     '/dashboard/:path*',
     '/profile/:path*',
     '/orders/:path*',

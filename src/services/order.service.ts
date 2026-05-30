@@ -6,7 +6,7 @@
  * All endpoints documented in backend-contracts-order-service.md
  */
 
-import { orderRequest, serviceBaseUrl, normalizeEnvelopeError } from './api-client';
+import { orderRequest } from './api-client';
 import {
   Order,
   OrderStatus,
@@ -36,9 +36,6 @@ import {
   GetProductRatingResponse,
   GetAdminOrdersResponse,
   AdminForceCancelResponse,
-  ProductRatingListResponse,
-  JastiperRatingListResponse,
-  AdminGetOrderResponse,
 } from '@/lib/api/orders';
 
 // Re-export types for backward compatibility
@@ -69,9 +66,6 @@ export type {
   GetProductRatingResponse,
   GetAdminOrdersResponse,
   AdminForceCancelResponse,
-  ProductRatingListResponse,
-  JastiperRatingListResponse,
-  AdminGetOrderResponse,
 };
 
 // Aliases for backward compatibility
@@ -94,11 +88,12 @@ export type OrderHistoryEntry = OrderHistory;
  * @throws ApiError on validation failure, insufficient stock, or insufficient balance
  */
 export async function createOrder(token: string, input: CreateOrderRequest): Promise<Order> {
-  return await orderRequest<Order>('/orders', {
+  const response = await orderRequest<CreateOrderResponse>('/orders', {
     method: 'POST',
     token,
     body: input,
   });
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,10 +112,11 @@ export async function createOrder(token: string, input: CreateOrderRequest): Pro
  * @throws ApiError if order not found or user lacks access
  */
 export async function getOrder(token: string, orderId: string): Promise<Order> {
-  return await orderRequest<Order>(`/orders/${encodeURIComponent(orderId)}`, {
+  const response = await orderRequest<GetOrderResponse>(`/orders/${encodeURIComponent(orderId)}`, {
     method: 'GET',
     token,
   });
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -139,13 +135,14 @@ export async function getOrder(token: string, orderId: string): Promise<Order> {
  * @throws ApiError if order is not PENDING, user is not the buyer, or wallet balance is insufficient
  */
 export async function payOrder(token: string, orderId: string): Promise<Order> {
-  return await orderRequest<Order>(
+  const response = await orderRequest<PayOrderResponse>(
     `/orders/${encodeURIComponent(orderId)}/payment`,
     {
       method: 'PATCH',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,13 +164,14 @@ export async function confirmOrder(
   token: string,
   orderId: string
 ): Promise<ConfirmOrderResponse['data']> {
-  return await orderRequest<ConfirmOrderResponse['data']>(
+  const response = await orderRequest<ConfirmOrderResponse>(
     `/orders/${encodeURIComponent(orderId)}/confirm`,
     {
       method: 'PATCH',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,13 +192,14 @@ export async function markPurchased(
   token: string,
   orderId: string
 ): Promise<MarkPurchasedResponse['data']> {
-  return await orderRequest<MarkPurchasedResponse['data']>(
+  const response = await orderRequest<MarkPurchasedResponse>(
     `/orders/${encodeURIComponent(orderId)}/purchased`,
     {
       method: 'PATCH',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +224,7 @@ export async function markShipped(
   trackingNumber?: string | null,
   courier?: string | null
 ): Promise<MarkShippedResponse['data']> {
-  return await orderRequest<MarkShippedResponse['data']>(
+  const response = await orderRequest<MarkShippedResponse>(
     `/orders/${encodeURIComponent(orderId)}/shipped`,
     {
       method: 'PATCH',
@@ -236,6 +235,7 @@ export async function markShipped(
       },
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -261,7 +261,7 @@ export async function cancelOrder(
   orderId: string,
   cancellationReason: string
 ): Promise<Order> {
-  return await orderRequest<Order>(
+  const response = await orderRequest<CancelOrderResponse>(
     `/orders/${encodeURIComponent(orderId)}/cancel`,
     {
       method: 'POST',
@@ -271,6 +271,7 @@ export async function cancelOrder(
       },
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,13 +290,14 @@ export async function cancelOrder(
  * @throws ApiError if order not found or user lacks access
  */
 export async function getOrderHistory(token: string, orderId: string): Promise<OrderHistory[]> {
-  return await orderRequest<OrderHistory[]>(
+  const response = await orderRequest<GetOrderHistoryResponse>(
     `/orders/${encodeURIComponent(orderId)}/history`,
     {
       method: 'GET',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -332,21 +334,14 @@ export async function getMyPurchases(
     });
   }
   const qs = query.toString();
-  const baseUrl = serviceBaseUrl('NEXT_PUBLIC_ORDER_SERVICE_URL', '/api/order');
-  const res = await fetch(`${baseUrl}/orders/my/purchases${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw normalizeEnvelopeError(res.status, body);
-  }
-  return {
-    data: body?.data ?? [],
-    pagination: body?.pagination ?? { total_items: 0, page: 1, limit: 20, total_pages: 1 },
-  };
+  const response = await orderRequest<GetMyPurchasesResponse>(
+    `/orders/my/purchases${qs ? `?${qs}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    }
+  );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -376,21 +371,14 @@ export async function getMySales(
     });
   }
   const qs = query.toString();
-  const baseUrl = serviceBaseUrl('NEXT_PUBLIC_ORDER_SERVICE_URL', '/api/order');
-  const res = await fetch(`${baseUrl}/orders/my/sales${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw normalizeEnvelopeError(res.status, body);
-  }
-  return {
-    data: body?.data ?? [],
-    pagination: body?.pagination ?? { total_items: 0, page: 1, limit: 20, total_pages: 1 },
-  };
+  const response = await orderRequest<GetMySalesResponse>(
+    `/orders/my/sales${qs ? `?${qs}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    }
+  );
+  return response.data;
 }
 
 
@@ -415,7 +403,7 @@ export async function rateJastiper(
   orderId: string,
   input: RateJastiperRequest
 ): Promise<RateJastiperResponse['data']> {
-  return await orderRequest<RateJastiperResponse['data']>(
+  const response = await orderRequest<RateJastiperResponse>(
     `/orders/${encodeURIComponent(orderId)}/rating/jastiper`,
     {
       method: 'POST',
@@ -423,6 +411,7 @@ export async function rateJastiper(
       body: input,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -443,13 +432,14 @@ export async function getJastiperRating(
   token: string,
   orderId: string
 ): Promise<JastiperRating> {
-  return await orderRequest<JastiperRating>(
+  const response = await orderRequest<GetJastiperRatingResponse>(
     `/orders/${encodeURIComponent(orderId)}/rating/jastiper`,
     {
       method: 'GET',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -473,7 +463,7 @@ export async function rateProduct(
   orderId: string,
   input: RateProductRequest
 ): Promise<RateProductResponse['data']> {
-  return await orderRequest<RateProductResponse['data']>(
+  const response = await orderRequest<RateProductResponse>(
     `/orders/${encodeURIComponent(orderId)}/rating/product`,
     {
       method: 'POST',
@@ -481,6 +471,7 @@ export async function rateProduct(
       body: input,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -501,13 +492,14 @@ export async function getProductRating(
   token: string,
   orderId: string
 ): Promise<ProductRating> {
-  return await orderRequest<ProductRating>(
+  const response = await orderRequest<GetProductRatingResponse>(
     `/orders/${encodeURIComponent(orderId)}/rating/product`,
     {
       method: 'GET',
       token,
     }
   );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -541,21 +533,14 @@ export async function adminGetOrders(
     });
   }
   const qs = query.toString();
-  const baseUrl = serviceBaseUrl('NEXT_PUBLIC_ORDER_SERVICE_URL', '/api/order');
-  const res = await fetch(`${baseUrl}/admin/orders${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw normalizeEnvelopeError(res.status, body);
-  }
-  return {
-    data: body?.data ?? [],
-    pagination: body?.pagination ?? { total_items: 0, page: 1, limit: 20, total_pages: 1 },
-  };
+  const response = await orderRequest<GetAdminOrdersResponse>(
+    `/admin/orders${qs ? `?${qs}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    }
+  );
+  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -579,7 +564,7 @@ export async function adminForceCancel(
   orderId: string,
   cancellationReason: string
 ): Promise<Order> {
-  return await orderRequest<Order>(
+  const response = await orderRequest<AdminForceCancelResponse>(
     `/admin/orders/${encodeURIComponent(orderId)}/force-cancel`,
     {
       method: 'POST',
@@ -589,89 +574,5 @@ export async function adminForceCancel(
       },
     }
   );
-}
-
-// ---------------------------------------------------------------------------
-// getProductRatings
-// GET /products/{productId}/ratings
-// Public — no token required
-// ---------------------------------------------------------------------------
-
-export async function getProductRatings(
-  productId: string,
-  params?: { page?: number; limit?: number }
-): Promise<ProductRatingListResponse> {
-  const query = new URLSearchParams();
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined) query.set(k, String(v));
-    });
-  }
-  const qs = query.toString();
-  return await orderRequest<ProductRatingListResponse>(
-    `/products/${encodeURIComponent(productId)}/ratings${qs ? `?${qs}` : ''}`,
-    { method: 'GET' }
-  );
-}
-
-// ---------------------------------------------------------------------------
-// getJastiperRatings
-// GET /jastipers/{jastiperId}/ratings
-// Public — no token required
-// ---------------------------------------------------------------------------
-
-export async function getJastiperRatings(
-  jastiperId: string,
-  params?: { page?: number; limit?: number }
-): Promise<JastiperRatingListResponse> {
-  const query = new URLSearchParams();
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined) query.set(k, String(v));
-    });
-  }
-  const qs = query.toString();
-  const raw = await orderRequest<{
-    ratings: (JastiperRating & { titipers_username?: string })[];
-    page: number;
-    limit: number;
-    total: number;
-    average_rating: number;
-  }>(
-    `/jastipers/${encodeURIComponent(jastiperId)}/ratings${qs ? `?${qs}` : ''}`,
-    { method: 'GET' }
-  );
-  return {
-    data: raw.ratings ?? [],
-    pagination: {
-      total_items: raw.total,
-      page: raw.page,
-      limit: raw.limit,
-      total_pages: Math.ceil(raw.total / raw.limit) || 1,
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// adminGetOrder
-// GET /admin/orders/{orderId}
-// Admin — JWT required
-// ---------------------------------------------------------------------------
-
-export async function adminGetOrder(
-  token: string,
-  orderId: string
-): Promise<AdminGetOrderResponse['data']> {
-  const baseUrl = serviceBaseUrl('NEXT_PUBLIC_ORDER_SERVICE_URL', '/api/order');
-  const res = await fetch(`${baseUrl}/admin/orders/${encodeURIComponent(orderId)}`, {
-    method: 'GET',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw normalizeEnvelopeError(res.status, body);
-  }
-  return body?.data as AdminGetOrderResponse['data'];
+  return response.data;
 }

@@ -209,13 +209,9 @@ export default function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                  {orders.map((order) => (
-                  <tr
-                    key={order.order_id}
-                    onClick={() => router.push(`/admin/orders/${order.order_id}`)}
-                    className="hover:bg-gray-50 transition cursor-pointer"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-(--color-primary) hover:underline">
+                {orders.map((order) => (
+                  <tr key={order.order_id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
                       {order.order_id.slice(0, 8)}...
                     </td>
                     <td className="px-4 py-3">
@@ -259,7 +255,7 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3">
                       {!TERMINAL_STATUSES.includes(order.status) && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setCancelModal({ orderId: order.order_id }); }}
+                          onClick={() => setCancelModal({ orderId: order.order_id })}
                           className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition"
                         >
                           Force Cancel

@@ -225,7 +225,7 @@ export default function JastiperProfilePage() {
           <Navbar />
           <main className="flex flex-col items-center justify-center px-4 py-32 text-center">
             <p className="text-2xl font-bold text-gray-800 mb-2">Profil tidak ditemukan</p>
-            <p className="text-gray-500 mb-6">Pengguna dengan nama akun "{username}" tidak terdaftar di platform JSON.</p>
+            <p className="text-gray-500 mb-6">Pengguna dengan nama akun &quot;{username}&quot; tidak terdaftar di platform JSON.</p>
             <Link href="/catalog" className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition">
               Kembali ke Katalog
             </Link>
