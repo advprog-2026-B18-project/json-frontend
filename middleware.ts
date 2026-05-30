@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isAdmin, isLoggedIn, verifyJwt } from './src/lib/auth';
+import { isAdmin, isJastiper, isLoggedIn, verifyJwt } from './src/lib/auth';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const LOGIN_PATH = '/login';
@@ -12,23 +12,48 @@ function redirectToLogin(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const token = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
-  if (!token) return redirectToLogin(request);
 
-  const payload = await verifyJwt(token);
-  if (!isLoggedIn(payload)) return redirectToLogin(request);
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isJastiperRoute = pathname.startsWith('/jastiper');
+  const isGeneralProtectedRoute =
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/orders') ||
+      pathname.startsWith('/wallet');
 
-  if (request.nextUrl.pathname.startsWith('/admin') && !isAdmin(payload)) {
-    return redirectToLogin(request);
+  if (isAdminRoute || isJastiperRoute || isGeneralProtectedRoute) {
+    if (!token) return redirectToLogin(request);
+
+    const payload = await verifyJwt(token);
+    if (!isLoggedIn(payload)) return redirectToLogin(request);
+
+    if (isAdminRoute && !isAdmin(payload)) {
+      return redirectToLogin(request);
+    }
+
+    if (isJastiperRoute && !isJastiper(payload)) {
+      return redirectToLogin(request);
+    }
+
+    const requestHeaders = new Headers(request.headers);
+    if (payload?.sub) requestHeaders.set('x-user-id', payload.sub);
+    if (payload?.role) requestHeaders.set('x-role', payload.role);
+
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  const requestHeaders = new Headers(request.headers);
-  if (payload?.sub) requestHeaders.set('x-user-id', payload.sub);
-  if (payload?.role) requestHeaders.set('x-role', payload.role);
-
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/jastiper/:path*',
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/orders/:path*',
+    '/wallet/:path*',
+  ],
 };

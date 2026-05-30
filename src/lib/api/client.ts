@@ -18,6 +18,23 @@ export class ApiError extends Error {
 }
 
 function getBaseUrlFor(service: ApiService): string {
+  const isClient = typeof window !== 'undefined';
+
+  if (isClient) {
+    switch (service) {
+      case 'auth':
+        return '/api/auth';
+      case 'payment':
+        return '/api/payment';
+      case 'inventory':
+        return '/api/inventory';
+      case 'orders':
+        return '/api/order';
+      default:
+        throw new Error(`Unknown service: ${service}`);
+    }
+  }
+
   const envKeyByService: Record<ApiService, string> = {
     auth: 'NEXT_PUBLIC_AUTH_SERVICE_URL',
     payment: 'NEXT_PUBLIC_PAYMENT_SERVICE_URL',
@@ -52,9 +69,9 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 export async function apiFetchFrom<T>(
-  service: ApiService,
-  endpoint: string,
-  options?: RequestInit
+    service: ApiService,
+    endpoint: string,
+    options?: RequestInit
 ): Promise<T> {
   const baseUrl = getBaseUrlFor(service);
   const res = await fetch(`${baseUrl}${endpoint}`, {
@@ -105,7 +122,7 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 // Convenience helpers for pages
 export const authFetch = <T>(endpoint: string, options?: RequestInit) => apiFetchFrom<T>('auth', endpoint, options);
 export const paymentFetch = <T>(endpoint: string, options?: RequestInit) =>
-  apiFetchFrom<T>('payment', endpoint, options);
+    apiFetchFrom<T>('payment', endpoint, options);
 export const inventoryFetch = <T>(endpoint: string, options?: RequestInit) =>
-  apiFetchFrom<T>('inventory', endpoint, options);
+    apiFetchFrom<T>('inventory', endpoint, options);
 export const ordersFetch = <T>(endpoint: string, options?: RequestInit) => apiFetchFrom<T>('orders', endpoint, options);

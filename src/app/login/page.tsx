@@ -30,18 +30,21 @@ function LoginForm() {
     try {
       const data = await login({ email, password });
 
-      // Store access token + user info in context.
-      // The backend returns the access token in `refresh_token` (naming quirk).
       setAccessToken(data.refresh_token, data.user);
 
-      // Role-based redirect
-      const role = data.user.role;
+      const redirectedFrom = searchParams.get('redirectedFrom');
+      if (redirectedFrom) {
+        router.push(redirectedFrom);
+        return;
+      }
+
+      const role = data.user?.role?.toUpperCase();
       if (role === 'ADMIN') {
-        router.push('/admin/dashboard');
+        router.push('/admin/catalog');
       } else if (role === 'JASTIPER') {
-        router.push('/jastiper/dashboard');
+        router.push('/jastiper/catalog');
       } else {
-        router.push('/dashboard');
+        router.push('/catalog'); // FIX: Diarahkan ke katalog spesifik untuk TITIPERS
       }
     } catch (err) {
       if (isApiError(err)) {

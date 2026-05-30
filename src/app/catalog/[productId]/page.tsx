@@ -9,8 +9,6 @@
  * - TITIPERS (owner): disabled button with tooltip
  * - JASTIPER (owner): hidden checkout, shows "Edit Produk" link
  * - OUT_OF_STOCK: button disabled, shows "Stok Habis"
- *
- * ProductResponse fields are camelCase (productId, originCountry, serviceFee, etc.)
  */
 
 import Link from 'next/link';
@@ -34,7 +32,7 @@ function formatRupiah(amount: number) {
 }
 
 function formatDate(dateStr: string) {
-  // purchaseDate is YYYY-MM-DD (LocalDate)
+  if (!dateStr) return '-';
   const [year, month, day] = dateStr.split('-');
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   return `${day} ${months[Number(month) - 1]} ${year}`;
@@ -86,7 +84,7 @@ function StatusBadge({ status }: { status: string }) {
 // ---------------------------------------------------------------------------
 function ImageGallery({ images, name }: { images: string[]; name: string }) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const src = images[activeIdx] ?? null;
+  const src = images?.[activeIdx] ?? null;
 
   return (
     <div>
@@ -109,7 +107,7 @@ function ImageGallery({ images, name }: { images: string[]; name: string }) {
       </div>
 
       {/* Thumbnails */}
-      {images.length > 1 && (
+      {images && images.length > 1 && (
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {images.map((img, i) => (
             <button
@@ -164,7 +162,7 @@ function PageSkeleton() {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const productId = params.productId as string;
+  const rawProductId = params.productId as string;
 
   const { accessToken, user, isLoading: authLoading } = useAuth();
 
@@ -177,11 +175,11 @@ export default function ProductDetailPage() {
   // Fetch product
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!productId) return;
+    if (!rawProductId || rawProductId === 'undefined') return;
     setLoading(true);
     setNotFound(false);
 
-    getProduct(productId)
+    getProduct(rawProductId)
       .then((data) => {
         setProduct(data);
       })
@@ -193,7 +191,7 @@ export default function ProductDetailPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [productId]);
+  }, [rawProductId]);
 
   // ---------------------------------------------------------------------------
   // Derived auth state
@@ -202,8 +200,8 @@ export default function ProductDetailPage() {
   const userRole = user?.role ?? null;
   const userId = user?.user_id ?? null;
 
-  // Determine if the current user is the jastiper who owns this product
-  const isOwner = !!product && !!userId && product.jastiper.userId === userId;
+  const productJastiperId = product?.jastiper?.userId || (product?.jastiper as any)?.user_id;
+  const isOwner = !!product && !!userId && productJastiperId === userId;
 
   // ---------------------------------------------------------------------------
   // Checkout button logic
@@ -211,13 +209,13 @@ export default function ProductDetailPage() {
   function renderCheckoutArea() {
     if (!product) return null;
 
-    const isOutOfStock = product.status === 'OUT_OF_STOCK';
+    const isOutOfStock = product.stock === 0 || product.status === 'OUT_OF_STOCK';
 
     // Guest
     if (!isAuthenticated) {
       return (
         <Link
-          href={`/login?redirect=/catalog/${productId}`}
+          href={`/login?redirect=/catalog/${rawProductId}`}
           className="block w-full rounded-xl bg-(--color-primary) py-3 text-center text-sm font-semibold text-white hover:bg-(--color-primary-dark) transition"
         >
           Masuk untuk membeli produk ini
@@ -229,7 +227,7 @@ export default function ProductDetailPage() {
     if (userRole === 'JASTIPER' && isOwner) {
       return (
         <Link
-          href={`/jastiper/catalog/${productId}/edit`}
+          href={`/jastiper/catalog/${rawProductId}/edit`}
           className="block w-full rounded-xl border border-(--color-primary) py-3 text-center text-sm font-semibold text-(--color-primary) hover:bg-green-50 transition"
         >
           Edit Produk
@@ -237,7 +235,6 @@ export default function ProductDetailPage() {
       );
     }
 
-    // TITIPERS who own the product (edge case — shouldn't happen but guard it)
     if (isOwner) {
       return (
         <div className="relative group">
@@ -271,7 +268,7 @@ export default function ProductDetailPage() {
     // Normal TITIPERS checkout
     return (
       <button
-        onClick={() => router.push(`/checkout/${productId}`)}
+        onClick={() => router.push(`/checkout/${rawProductId}`)}
         className="w-full rounded-xl bg-(--color-primary) py-3 text-sm font-semibold text-white hover:bg-(--color-primary-dark) transition active:scale-95"
       >
         Beli Sekarang
@@ -321,8 +318,22 @@ export default function ProductDetailPage() {
     );
   }
 
-  const total = product.price + product.serviceFee;
-  const isLongDesc = product.description.length > 500;
+  const p = product as any;
+  const serviceFee = p.serviceFee ?? p.service_fee ?? 0;
+  const total = p.price + serviceFee;
+  const originCountry = p.originCountry || p.origin_country || '-';
+  const purchaseDate = p.purchaseDate || p.purchase_date || '';
+  const isLongDesc = (p.description || '').length > 500;
+
+  const jastiperUsername = p.jastiper?.username ?? p.jastiper?.user_id ?? 'Jastiper';
+  const jastiperFullName = p.jastiper?.fullName || p.jastiper?.full_name;
+  const jastiperAvgRating = p.jastiper?.avgRating ?? p.jastiper?.avg_rating ?? 0;
+  const jastiperTotalOrders = p.jastiper?.totalOrders ?? p.jastiper?.total_orders ?? 0;
+
+  const statsTotalOrders = p.stats?.totalOrders ?? p.stats?.total_orders ?? 0;
+  const statsTotalReviews = p.stats?.totalReviews ?? p.stats?.total_reviews ?? 0;
+  const statsAvgRating = p.stats?.avgRating ?? p.stats?.avg_rating ?? 0;
+  const categoryName = p.category?.name ?? 'Uncategorized';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -351,19 +362,19 @@ export default function ProductDetailPage() {
           <span>/</span>
           <Link href="/catalog" className="hover:text-(--color-primary)">Katalog</Link>
           <span>/</span>
-          <span className="text-gray-800 line-clamp-1">{product.name}</span>
+          <span className="text-gray-800 line-clamp-1">{p.name}</span>
         </nav>
 
         {/* Main two-column layout */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left column — image gallery + tags */}
           <div className="w-full lg:w-3/5">
-            <ImageGallery images={product.images} name={product.name} />
+            <ImageGallery images={p.images || []} name={p.name} />
 
             {/* Tags */}
-            {product.tags.length > 0 && (
+            {p.tags && p.tags.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
+                {p.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600"
@@ -377,18 +388,32 @@ export default function ProductDetailPage() {
 
           {/* Right column — product info + actions */}
           <div className="flex-1 space-y-4">
+
             {/* Status badge */}
-            <StatusBadge status={product.status} />
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={p.status} />
+
+              {p.mode === 'FLASH_SALE' && (
+                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">
+                  ⚡ Flash Sale
+                </span>
+              )}
+              {p.mode === 'PRE_ORDER' && (
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+                  📦 Pre-Order
+                </span>
+              )}
+            </div>
 
             {/* Product name */}
-            <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{p.name}</h1>
 
             {/* Rating */}
-            {product.stats.avgRating > 0 && (
+            {statsAvgRating > 0 && (
               <div className="flex items-center gap-2">
-                <RatingStars rating={product.stats.avgRating} />
+                <RatingStars rating={statsAvgRating} />
                 <span className="text-sm text-gray-500">
-                  ({product.stats.totalReviews} ulasan)
+                  ({statsTotalReviews} ulasan)
                 </span>
               </div>
             )}
@@ -396,14 +421,14 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="rounded-xl bg-gray-50 p-4 space-y-1.5">
               <p className="text-2xl font-bold text-(--color-primary-dark)">
-                {formatRupiah(product.price)}
+                {formatRupiah(p.price)}
               </p>
-              {product.serviceFee > 0 && (
+              {serviceFee > 0 && (
                 <p className="text-sm text-gray-500">
-                  Biaya Jasa: {formatRupiah(product.serviceFee)}
+                  Biaya Jasa: {formatRupiah(serviceFee)}
                 </p>
               )}
-              {product.serviceFee > 0 && (
+              {serviceFee > 0 && (
                 <p className="text-sm font-semibold text-gray-700">
                   Total: {formatRupiah(total)}
                 </p>
@@ -415,9 +440,9 @@ export default function ProductDetailPage() {
               <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              <span className={`text-sm font-medium ${product.stock <= 3 && product.stock > 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                {product.stock === 0 ? 'Stok habis' : `Stok: ${product.stock} tersisa`}
-                {product.stock > 0 && product.stock <= 3 && ' — segera habis!'}
+              <span className={`text-sm font-medium ${p.stock <= 3 && p.stock > 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                {p.stock === 0 ? 'Stok habis' : `Stok: ${p.stock} tersisa`}
+                {p.stock > 0 && p.stock <= 3 && ' — segera habis!'}
               </span>
             </div>
 
@@ -427,22 +452,20 @@ export default function ProductDetailPage() {
                 <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
                 </svg>
-                <span>Asal: <strong>{product.originCountry}</strong></span>
+                <span>Asal: <strong>{originCountry}</strong></span>
               </div>
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>Tanggal Beli: <strong>{formatDate(product.purchaseDate)}</strong></span>
+                <span>Tanggal Beli: <strong>{formatDate(purchaseDate)}</strong></span>
               </div>
-              {product.category && (
-                <div className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                  <span>Kategori: <strong>{product.category.name}</strong></span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span>Kategori: <strong>{categoryName}</strong></span>
+              </div>
             </div>
 
             {/* Jastiper info card */}
@@ -450,24 +473,24 @@ export default function ProductDetailPage() {
               <p className="mb-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Dijual oleh</p>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-(--color-primary) flex items-center justify-center text-white font-bold text-sm shrink-0">
-                  {product.jastiper.username?.[0]?.toUpperCase() ?? 'J'}
+                  {jastiperUsername?.[0]?.toUpperCase() ?? 'J'}
                 </div>
                 <div className="min-w-0">
                   <Link
-                    href={`/jastiper/${product.jastiper.username ?? product.jastiper.userId}`}
+                    href={`/jastiper/${jastiperUsername}`}
                     className="font-semibold text-gray-800 hover:text-(--color-primary) transition truncate block"
                   >
-                    {product.jastiper.username ?? 'Jastiper'}
+                    {jastiperUsername}
                   </Link>
-                  {product.jastiper.fullName && (
-                    <p className="text-xs text-gray-500 truncate">{product.jastiper.fullName}</p>
+                  {jastiperFullName && (
+                    <p className="text-xs text-gray-500 truncate">{jastiperFullName}</p>
                   )}
                   <div className="mt-0.5 flex items-center gap-2">
-                    {product.jastiper.avgRating > 0 && (
-                      <RatingStars rating={product.jastiper.avgRating} size="sm" />
+                    {jastiperAvgRating > 0 && (
+                      <RatingStars rating={jastiperAvgRating} size="sm" />
                     )}
                     <span className="text-xs text-gray-400">
-                      {product.jastiper.totalOrders} pesanan
+                      {jastiperTotalOrders} pesanan
                     </span>
                   </div>
                 </div>
@@ -488,7 +511,7 @@ export default function ProductDetailPage() {
             <h2 className="mb-3 text-lg font-bold text-gray-900">Deskripsi Produk</h2>
             <div className="rounded-xl border border-gray-200 bg-white p-5">
               <p className={`text-sm text-gray-700 leading-relaxed whitespace-pre-wrap ${!descExpanded && isLongDesc ? 'line-clamp-6' : ''}`}>
-                {product.description}
+                {p.description}
               </p>
               {isLongDesc && (
                 <button
@@ -506,16 +529,16 @@ export default function ProductDetailPage() {
             <h2 className="mb-3 text-lg font-bold text-gray-900">Statistik Produk</h2>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-                <p className="text-2xl font-bold text-(--color-primary-dark)">{product.stats.totalOrders}</p>
+                <p className="text-2xl font-bold text-(--color-primary-dark)">{statsTotalOrders}</p>
                 <p className="text-xs text-gray-500 mt-1">Total Pesanan</p>
               </div>
               <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-                <p className="text-2xl font-bold text-(--color-primary-dark)">{product.stats.totalReviews}</p>
+                <p className="text-2xl font-bold text-(--color-primary-dark)">{statsTotalReviews}</p>
                 <p className="text-xs text-gray-500 mt-1">Ulasan</p>
               </div>
               <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
                 <p className="text-2xl font-bold text-(--color-primary-dark)">
-                  {product.stats.avgRating > 0 ? product.stats.avgRating.toFixed(1) : '—'}
+                  {statsAvgRating > 0 ? statsAvgRating.toFixed(1) : '—'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Rating Rata-rata</p>
               </div>

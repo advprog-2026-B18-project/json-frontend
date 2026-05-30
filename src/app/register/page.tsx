@@ -48,19 +48,21 @@ export default function RegisterPage() {
     try {
       await register({ email, password, password_confirmation: passwordConfirmation, role });
 
-      // Role-based success message via query param, then redirect to /login
       const msg = role === 'JASTIPER'
-        ? 'Akun Jastiper dibuat. Tunggu verifikasi KYC dari admin.'
-        : 'Akun berhasil dibuat. Silakan masuk.';
+          ? 'Akun Jastiper dibuat. Tunggu verifikasi KYC dari admin.'
+          : 'Akun berhasil dibuat. Silakan masuk.';
       router.push(`/login?success=${encodeURIComponent(msg)}`);
     } catch (err) {
       if (isApiError(err)) {
         const msg = err.message ?? 'Registrasi gagal.';
-        // Map common backend messages to per-field errors
-        if (msg.toLowerCase().includes('email')) {
-          setEmailError('Email sudah terdaftar');
-        } else if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('kata sandi')) {
+        const field = err.field;
+
+        if (field === 'email' || msg.toLowerCase().includes('email')) {
+          setEmailError(msg || 'Email sudah terdaftar atau tidak valid.');
+        } else if (field === 'password' || msg.toLowerCase().includes('password') || msg.toLowerCase().includes('kata sandi')) {
           setPasswordError(msg);
+        } else if (field === 'password_confirmation') {
+          setConfirmError(msg);
         } else {
           setGeneralError(msg);
         }
