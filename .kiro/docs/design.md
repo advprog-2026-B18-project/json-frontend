@@ -11,7 +11,7 @@ This document defines the complete UI/UX design for every page and shared compon
 - **Purpose:** Introduce the JSON platform, showcase featured products, and direct users to register or browse.
 
 ### Layout and Components
-The landing page uses a full-width layout with a sticky Navbar at the top. Sections:
+The landing page uses a full-width layout with the shared `<Navbar />` component at the top, which conditionally shows user menu (if authenticated) or "Masuk"/"Daftar" (if guest). Sections:
 1. Hero Section: Full-width banner with JSON logo, tagline "Jastip Online Nasional, Mudah dan Terpercaya", and two CTA buttons: "Mulai Belanja" (links to /catalog) and "Daftar Sebagai Jastiper" (links to /register). Background uses a gradient from --color-primary-dark to --color-primary.
 2. Featured Products Section: Horizontally scrollable row of up to 8 ProductCard components showing ACTIVE products sorted by rating descending. Fetched from GET /products with limit=8&sortBy=rating&order=desc.
 3. How It Works Section: Three-column icon grid explaining the jastip flow: (1) Pilih Produk — browse and select items from jastipers, (2) Bayar via Dompet — pay securely from your JSON wallet, (3) Terima Barang — receive your item delivered to your door.
@@ -20,7 +20,6 @@ The landing page uses a full-width layout with a sticky Navbar at the top. Secti
 6. Footer: Links to About, FAQ, Contact, Terms of Service, Privacy Policy, and social media icons.
 
 ### Reusable Components Used
-- Navbar
 - ProductCard
 - RatingStars
 - LoadingSpinner / SkeletonLoader
@@ -36,8 +35,7 @@ The landing page uses a full-width layout with a sticky Navbar at the top. Secti
 - Clicking a ProductCard navigates to /catalog/[productId]
 - Clicking a jastiper mini-card navigates to /jastiper/[username]
 - Clicking a category chip navigates to /catalog?categoryId=[id]
-- Navbar shows Login and Register buttons for unauthenticated users
-- Navbar shows user avatar and wallet balance for authenticated users
+- Inline header shows "Masuk" and "Daftar" for guests, "Dashboard" link for authenticated users
 
 ### Edge Cases and States
 - Loading state: 8 ProductCard skeletons shown while featured products load; category chips show placeholder pills
@@ -71,7 +69,9 @@ Centered card layout on a light background. The card contains:
 ### User Interactions
 - User fills email and password fields
 - Submitting the form calls the BFF login route using React 19 form action pattern
-- On success: access token stored in AuthProvider context; user redirected to /dashboard (TITIPERS), /jastiper/dashboard (JASTIPER), or /admin/dashboard (ADMIN) based on role
+- On success: access token stored in AuthProvider context; user redirected to:
+  - `?redirect=` query param if provided (e.g., `/login?redirect=/orders`)
+  - Otherwise: `/dashboard` (TITIPERS), `/jastiper/dashboard` (JASTIPER), or `/admin/catalog` (ADMIN)
 - On failure: inline error message shown (e.g., "Email atau kata sandi salah", "Akun Anda telah diblokir")
 - Loading state: submit button shows spinner and is disabled during request
 
@@ -208,6 +208,7 @@ Below the columns:
 
 ### API / Service Calls
 - GET /products/{id} — fetches full product detail including jastiper info and stats
+- NOTE: Backend returns snake_case fields (purchase_date, origin_country, service_fee, weight_gram, product_id, etc.) despite type definitions claiming camelCase. The page uses a `normalizeProduct()` helper at the fetch site to map snake_case → camelCase before storing in state, so the rest of the component can access fields like `product.purchaseDate` safely.
 
 ### User Interactions
 - Clicking "Beli Sekarang" navigates to /checkout/[productId]
@@ -308,6 +309,7 @@ Dashboard layout with Navbar at top and a main content area:
 - Clicking an OrderCard navigates to /orders/[orderId]
 - Clicking "Lihat Semua" navigates to /orders
 - KYCStatusBanner CTA navigates to /profile/kyc
+- Role guard: non-TITIPERS (JASTIPER/ADMIN) are redirected to their respective dashboards
 
 ### Edge Cases and States
 - Loading state: Stats cards and OrderCard skeletons
@@ -362,7 +364,7 @@ Full-width layout with Navbar:
 Single-column layout with Navbar:
 - Order ID and created_at at the top
 - StatusBadge showing current order status
-- Order status timeline: visual stepper showing PENDING, PAID, PURCHASED, SHIPPED, COMPLETED with timestamps from order history
+- Order status timeline: visual stepper showing PENDING ("Menunggu Pembayaran"), PAID ("Dibayar — Menunggu dibeli jastiper"), PURCHASED ("Dibeli Jastiper — Menunggu dikirim"), SHIPPED ("Dikirim"), COMPLETED ("Selesai") with timestamps from order history
 - Product snapshot card: image, name, quantity, unit_price, service_fee, total_price
 - Jastiper info: avatar, username, link to /jastiper/[username]
 - Shipping address details
@@ -462,7 +464,7 @@ Right Column (Shipping Form):
 - **Purpose:** Display wallet balance, transaction history, and allow top-up requests.
 
 ### Layout and Components
-Full-width layout with Navbar:
+Full-width layout with Navbar at top and `max-w-5xl` centered content (consistent with dashboard and other authenticated pages):
 - WalletSummary card at the top: balance (large), "Top Up" button. NOTE: GET /wallets/me only returns wallet_id, user_id, and balance — escrow_balance is NOT available from this endpoint. Do not show an escrow note on this page.
 - Top Up form (collapsible or modal): amount input, payment_method dropdown, bank_code input, idempotency_key (auto-generated UUID, hidden from user)
 - Transaction history section:
@@ -529,7 +531,7 @@ Centered card layout:
 
 ### User Interactions
 - Editing fields and clicking Save calls PATCH /profile/me
-- On success: toast "Profil berhasil diperbarui"
+- On success: shows toast "Profil berhasil diperbarui" for 1.5s, then redirects to /dashboard
 - On username conflict: inline error "Username sudah digunakan"
 - KYC status link navigates to /profile/kyc
 
@@ -546,9 +548,10 @@ Centered card layout:
 - **Purpose:** Allow a titiper to submit KYC documents to apply for JASTIPER status.
 
 ### Layout and Components
-Centered card layout:
+Full-width layout with Navbar at top, centered card below:
 - Page title: "Verifikasi Identitas (KYC)"
 - KYC status banner at top (if already submitted)
+- **Prerequisite check**: on page load, fetches profile via GET /profile/me. If username or full_name is missing (profile incomplete), redirects to /profile so user fills basic info first
 - Form fields:
   - full_name_ktp: text input
   - ktp_number: text input (16 digits, numeric only)
@@ -564,6 +567,7 @@ Centered card layout:
 - Toast / Notification
 
 ### API / Service Calls
+- GET /profile/me — fetches profile to check username/full_name completeness; redirects to /profile if either is missing
 - GET /profile/me/kyc — fetches current KYC status (to show if already submitted)
 - POST /profile/me/kyc — submits KYC documents
 
@@ -575,6 +579,7 @@ Centered card layout:
 - On failure: per-field validation errors shown inline
 
 ### Edge Cases and States
+- Profile incomplete (no username or full_name): Redirects to /profile before showing KYC form
 - Already submitted (PENDING_VERIFICATION): Form is read-only; shows status banner
 - Already approved (APPROVED): Shows success banner "KYC Anda telah disetujui"; form hidden
 - Rejected (REJECTED): Shows rejection reason and allows re-submission
@@ -793,9 +798,10 @@ Full-width layout with Navbar and Sidebar:
 
 ### Layout and Components
 Same layout as Titiper Order Detail but with jastiper-specific actions:
-- Order ID, status badge, timeline
-- Product snapshot, quantity, pricing
-- Titiper info: username, shipping address
+- Order ID, status badge, timeline with labels: PENDING ("Menunggu dibayar titipers"), PAID ("Dibayar"), PURCHASED ("Dibeli Jastiper"), SHIPPED ("Dikirim — Menunggu konfirmasi titipers"), COMPLETED ("Selesai")
+- Product snapshot, quantity, pricing — whole product card is a clickable Link to /catalog/[productId]
+- Titiper info: fetches buyer profile via GET /profile/id/{id} and displays avatar, full_name, and @username instead of raw UUID
+- Shipping address
 - Note from titiper
 - Action buttons based on status:
   - PAID: "Tandai Sudah Dibeli" button
@@ -1223,7 +1229,7 @@ Admin layout with Navbar and Sidebar:
 - **File:** src/components/Navbar.tsx
 - **Used on:** All pages
 - **Props:** none (reads from AuthProvider context)
-- **Description:** Top navigation bar. Shows JSON logo (links to /), navigation links based on role (Catalog, Dashboard, Orders, Wallet), user avatar dropdown (Profile, Logout), and wallet balance for authenticated users. Shows Login and Register buttons for guests. Sticky positioned. Uses --color-primary-dark background.
+- **Description:** Top navigation bar. Shows JSON logo (links to /), navigation links based on role (Catalog, Dashboard, Orders, Wallet), user avatar dropdown (Profile, Logout), and wallet balance for authenticated users. Shows Login and Register buttons for guests. Sticky positioned. Uses --color-primary-dark background. Auth gate uses `{accessToken && user}` — both must be non-null to show authenticated UI.
 
 ### Component: Sidebar
 - **File:** src/components/Sidebar.tsx

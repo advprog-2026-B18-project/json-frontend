@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Navbar } from '@/components/Navbar'; // FIX: Impor komponen Navbar global resmi
+import { Navbar } from '@/components/Navbar';
 import {
+  getMyProfile,
   getMyKycStatus,
   submitKyc,
   isApiError,
@@ -18,44 +19,44 @@ import {
 // KYC status banner
 // ---------------------------------------------------------------------------
 function KycStatusBanner({
-                           status,
-                           rejectionReason,
-                         }: {
+  status,
+  rejectionReason,
+}: {
   status: KycStatus;
   rejectionReason?: string | null;
 }) {
   if (status === 'APPROVED') {
     return (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-4 text-sm text-green-800 animate-in fade-in duration-200">
-          <p className="font-bold text-green-900">✓ KYC Anda telah disetujui</p>
-          <p className="mt-1 text-green-700">Selamat! Akun Anda kini telah resmi terverifikasi sebagai Jastiper platform JSON.</p>
-        </div>
+      <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-4 text-sm text-green-800">
+        <p className="font-semibold">✓ KYC Anda telah disetujui</p>
+        <p className="mt-1 text-green-700">Akun Anda telah terverifikasi sebagai Jastiper.</p>
+      </div>
     );
   }
   if (status === 'PENDING_VERIFICATION') {
     return (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-4 text-sm text-yellow-800 animate-in fade-in duration-200">
-          <p className="font-bold text-yellow-900">⏳ KYC Anda sedang ditinjau oleh admin</p>
-          <p className="mt-1 text-yellow-700">Proses verifikasi dokumen internal biasanya memakan waktu 1–3 hari kerja.</p>
-        </div>
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-4 text-sm text-yellow-800">
+        <p className="font-semibold">⏳ KYC Anda sedang ditinjau oleh admin</p>
+        <p className="mt-1 text-yellow-700">Proses verifikasi biasanya memakan waktu 1–3 hari kerja.</p>
+      </div>
     );
   }
   if (status === 'REJECTED') {
     return (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800 animate-in fade-in duration-200">
-          <p className="font-bold text-red-900">✗ KYC Anda ditolak</p>
-          {rejectionReason && (
-              <p className="mt-1 text-red-700 font-medium">Alasan Penolakan: {rejectionReason}</p>
-          )}
-          <p className="mt-2 text-red-600 text-xs">Silakan periksa kembali kecocokan berkas data Anda, lakukan perbaikan, dan ajukan kembali.</p>
-        </div>
+      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800">
+        <p className="font-semibold">✗ KYC Anda ditolak</p>
+        {rejectionReason && (
+          <p className="mt-1 text-red-700">Alasan: {rejectionReason}</p>
+        )}
+        <p className="mt-2 text-red-700">Silakan perbaiki data Anda dan ajukan ulang.</p>
+      </div>
     );
   }
   return null;
 }
 
 // ---------------------------------------------------------------------------
-// Page Component
+// Page
 // ---------------------------------------------------------------------------
 export default function KycPage() {
   const router = useRouter();
@@ -82,38 +83,50 @@ export default function KycPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  // ---------------------------------------------------------------------------
   // Redirect if not authenticated
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!authLoading && !accessToken) {
       router.push('/login');
     }
   }, [authLoading, accessToken, router]);
 
-  // Fetch current KYC status
+  // ---------------------------------------------------------------------------
+  // Fetch current KYC status and profile
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (authLoading || !accessToken) return;
 
     let cancelled = false;
     setLoadingStatus(true);
 
-    getMyKycStatus(accessToken)
-        .then((data) => {
-          if (!cancelled) setKycStatus(data);
-        })
-        .catch((err) => {
-          // 404 = no KYC submitted yet — that's fine, show the form
-          if (isApiError(err) && err.status === 404) {
-            if (!cancelled) setKycStatus(null);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setLoadingStatus(false);
-        });
+    Promise.all([
+      getMyProfile(accessToken),
+      getMyKycStatus(accessToken).catch((err) => {
+        if (isApiError(err) && err.status === 404) return null;
+        throw err;
+      }),
+    ])
+      .then(([profile, kyc]) => {
+        if (cancelled) return;
+        setKycStatus(kyc);
+
+        if (!profile.username || !profile.full_name) {
+          router.push('/profile');
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingStatus(false);
+      });
 
     return () => { cancelled = true; };
-  }, [authLoading, accessToken]);
+  }, [authLoading, accessToken, router]);
 
+  // ---------------------------------------------------------------------------
   // Social links helpers
+  // ---------------------------------------------------------------------------
   function addSocialLink() {
     setSocialLinks((prev) => [...prev, { platform: '', url: '' }]);
   }
@@ -125,11 +138,13 @@ export default function KycPage() {
 
   function updateSocialLink(index: number, field: keyof KycSocialMediaLink, value: string) {
     setSocialLinks((prev) =>
-        prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
+      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
     );
   }
 
+  // ---------------------------------------------------------------------------
   // KTP number validation
+  // ---------------------------------------------------------------------------
   function handleKtpChange(val: string) {
     const digits = val.replace(/\D/g, '');
     setKtpNumber(digits);
@@ -140,7 +155,9 @@ export default function KycPage() {
     }
   }
 
-  // Submit process handler
+  // ---------------------------------------------------------------------------
+  // Submit
+  // ---------------------------------------------------------------------------
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!accessToken) return;
@@ -152,7 +169,7 @@ export default function KycPage() {
 
     const validLinks = socialLinks.filter((l) => l.platform.trim() && l.url.trim());
     if (validLinks.length === 0) {
-      setSubmitError('Minimal satu tautan media sosial aktif wajib dilampirkan.');
+      setSubmitError('Minimal satu tautan media sosial harus diisi.');
       return;
     }
 
@@ -179,49 +196,49 @@ export default function KycPage() {
       });
     } catch (err) {
       if (isApiError(err)) {
-        setSubmitError(err.message || 'Gagal mengirim berkas pengajuan KYC.');
+        setSubmitError(err.message || 'Gagal mengirim KYC.');
       } else {
-        setSubmitError('Tidak dapat terhubung ke server internal.');
+        setSubmitError('Tidak dapat terhubung ke server.');
       }
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // FIX: Bersihkan token warna bracket v4 murni ke format kelas utilitas murni
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   const inputClass =
-      'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-50 disabled:opacity-70 bg-white';
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-50 disabled:opacity-70 bg-white';
 
-  // FIX: Integrasi Navbar global pada Loading State Layout
   if (authLoading || loadingStatus) {
     return (
-        <div className="min-h-screen bg-gray-50">
-          <Navbar />
-          <main className="mx-auto max-w-xl px-4 py-12">
-            <div className="w-full rounded-2xl bg-white p-8 shadow-sm animate-pulse space-y-4 border border-gray-100">
-              <div className="h-6 w-48 rounded bg-gray-200" />
-              <div className="h-10 rounded bg-gray-100" />
-              <div className="h-10 rounded bg-gray-100" />
-              <div className="h-10 rounded bg-gray-100" />
-              <div className="h-10 rounded bg-gray-100" />
-            </div>
-          </main>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="mx-auto flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm animate-pulse space-y-4 border border-gray-100">
+            <div className="h-6 w-48 rounded bg-gray-200" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+          </div>
+        </main>
+      </div>
     );
   }
 
-  // FIX: Integrasi Navbar global pada Approved State Layout (Show banner only)
   if (kycStatus?.status === 'APPROVED') {
     return (
-        <div className="min-h-screen bg-gray-50">
-          <Navbar />
-          <main className="mx-auto w-full max-w-lg px-4 py-12">
-            <div className="rounded-2xl bg-white p-8 shadow-sm space-y-4 border border-gray-100">
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Verifikasi Identitas (KYC)</h1>
-              <KycStatusBanner status="APPROVED" />
-            </div>
-          </main>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="mx-auto w-full max-w-lg px-4 py-12">
+          <div className="rounded-2xl bg-white p-8 shadow-sm space-y-4 border border-gray-100">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Verifikasi Identitas (KYC)</h1>
+            <KycStatusBanner status="APPROVED" />
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -230,214 +247,201 @@ export default function KycPage() {
   const showForm = !isPending;
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="px-4 py-12">
+        <div className="mx-auto w-full max-w-lg">
+          <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-100">
+            <h1 className="mb-5 text-xl font-bold text-gray-900 tracking-tight">
+              Verifikasi Identitas (KYC)
+            </h1>
 
-        <main className="px-4 py-12">
-          <div className="mx-auto w-full max-w-lg">
-            <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-100">
-              <h1 className="mb-5 text-xl font-bold text-gray-900 tracking-tight">
-                Verifikasi Identitas (KYC)
-              </h1>
+            {(kycStatus || submitSuccess) && (
+              <div className="mb-6">
+                <KycStatusBanner
+                  status={submitSuccess ? 'PENDING_VERIFICATION' : kycStatus!.status}
+                  rejectionReason={kycStatus?.rejection_reason}
+                />
+              </div>
+            )}
 
-              {/* Status banner indicator */}
-              {(kycStatus || submitSuccess) && (
-                  <div className="mb-6">
-                    <KycStatusBanner
-                        status={submitSuccess ? 'PENDING_VERIFICATION' : kycStatus!.status}
-                        rejectionReason={kycStatus?.rejection_reason}
+            {isPending && (
+              <p className="text-sm text-gray-500">
+                Pengajuan KYC Anda sedang dalam antrian. Anda akan dihubungi setelah proses selesai.
+              </p>
+            )}
+
+            {showForm && !submitSuccess && (
+              <>
+                {isRejected && (
+                  <p className="mb-4 text-sm text-gray-600">
+                    Perbaiki data di bawah dan kirim ulang pengajuan KYC Anda.
+                  </p>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label htmlFor="full_name_ktp" className="mb-1 block text-sm font-medium text-gray-700">
+                      Nama Lengkap (sesuai KTP) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="full_name_ktp"
+                      type="text"
+                      required
+                      value={fullNameKtp}
+                      onChange={(e) => setFullNameKtp(e.target.value)}
+                      disabled={isSubmitting}
+                      className={inputClass}
+                      placeholder="Nama sesuai KTP"
                     />
                   </div>
-              )}
 
-              {/* Pending State Content — Read Only Banner Info */}
-              {isPending && (
-                  <p className="text-sm text-gray-500 leading-relaxed bg-gray-50 rounded-xl p-4 border border-gray-100">
-                    Pengajuan berkas KYC Anda saat ini sedang masuk dalam antrian moderasi tim administrator. Notifikasi status hak akses role akun Anda akan diperbarui secara otomatis setelah proses peninjauan selesai.
-                  </p>
-              )}
-
-              {/* Interactive KYC Form Input Fields Module */}
-              {showForm && !submitSuccess && (
-                  <>
-                    {isRejected && (
-                        <p className="mb-4 text-xs font-medium text-red-600 bg-red-50 rounded-lg px-3 py-2 border border-red-100">
-                          Perhatian: Harap sesuaikan ulang berkas data Anda di bawah ini berdasarkan alasan penolakan tim admin, lalu kirim ulang permohonan verifikasi.
-                        </p>
+                  <div>
+                    <label htmlFor="ktp_number" className="mb-1 block text-sm font-medium text-gray-700">
+                      Nomor KTP <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="ktp_number"
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      maxLength={16}
+                      value={ktpNumber}
+                      onChange={(e) => handleKtpChange(e.target.value)}
+                      disabled={isSubmitting}
+                      className={`${inputClass} ${ktpError ? 'border-red-400' : ''} font-mono tracking-widest`}
+                      placeholder="16 digit nomor KTP"
+                    />
+                    {ktpError ? (
+                      <p role="alert" className="mt-1 text-xs text-red-600">{ktpError}</p>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-400">
+                        {ktpNumber.length}/16 digit
+                      </p>
                     )}
+                  </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                      {/* Full name KTP */}
-                      <div>
-                        <label htmlFor="full_name_ktp" className="mb-1 block text-sm font-medium text-gray-700">
-                          Nama Lengkap (sesuai KTP) <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="full_name_ktp"
+                  <div>
+                    <label htmlFor="ktp_photo_url" className="mb-1 block text-sm font-medium text-gray-700">
+                      URL Foto KTP <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="ktp_photo_url"
+                      type="url"
+                      required
+                      value={ktpPhotoUrl}
+                      onChange={(e) => setKtpPhotoUrl(e.target.value)}
+                      disabled={isSubmitting}
+                      className={inputClass}
+                      placeholder="https://..."
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      Upload foto KTP ke layanan penyimpanan dan tempel URL-nya di sini.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="selfie_url" className="mb-1 block text-sm font-medium text-gray-700">
+                      URL Selfie dengan KTP <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="selfie_url"
+                      type="url"
+                      required
+                      value={selfieUrl}
+                      onChange={(e) => setSelfieUrl(e.target.value)}
+                      disabled={isSubmitting}
+                      className={inputClass}
+                      placeholder="https://..."
+                    />
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">
+                        Tautan Media Sosial <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addSocialLink}
+                        disabled={isSubmitting}
+                        className="text-xs font-semibold text-primary hover:text-primary-dark disabled:opacity-50 cursor-pointer"
+                      >
+                        + Tambah Link
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {socialLinks.map((link, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
                             type="text"
-                            required
-                            value={fullNameKtp}
-                            onChange={(e) => setFullNameKtp(e.target.value)}
+                            value={link.platform}
+                            onChange={(e) => updateSocialLink(index, 'platform', e.target.value)}
                             disabled={isSubmitting}
-                            className={inputClass}
-                            placeholder="Nama Lengkap"
-                        />
-                      </div>
-
-                      {/* KTP number */}
-                      <div>
-                        <label htmlFor="ktp_number" className="mb-1 block text-sm font-medium text-gray-700">
-                          Nomor KTP (NIK) <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="ktp_number"
-                            type="text"
-                            inputMode="numeric"
+                            className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                            placeholder="Platform"
                             required
-                            maxLength={16}
-                            value={ktpNumber}
-                            onChange={(e) => handleKtpChange(e.target.value)}
-                            disabled={isSubmitting}
-                            className={`${inputClass} ${ktpError ? 'border-red-400 focus:ring-red-400' : ''} font-mono tracking-widest`}
-                            placeholder="16 digit NIK"
-                        />
-                        {ktpError ? (
-                            <p role="alert" className="mt-1 text-xs text-red-600 font-medium">{ktpError}</p>
-                        ) : (
-                            <p className="mt-1 text-xs text-gray-400">
-                              {ktpNumber.length}/16 digit terisi
-                            </p>
-                        )}
-                      </div>
-
-                      {/* KTP photo URL */}
-                      <div>
-                        <label htmlFor="ktp_photo_url" className="mb-1 block text-sm font-medium text-gray-700">
-                          URL Foto KTP <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="ktp_photo_url"
+                          />
+                          <input
                             type="url"
-                            required
-                            value={ktpPhotoUrl}
-                            onChange={(e) => setKtpPhotoUrl(e.target.value)}
+                            value={link.url}
+                            onChange={(e) => updateSocialLink(index, 'url', e.target.value)}
                             disabled={isSubmitting}
-                            className={inputClass}
+                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                             placeholder="https://..."
-                        />
-                        <p className="mt-1 text-[11px] text-gray-400 leading-normal">
-                          Pastikan tulisan teks pada dokumen KTP terbaca dengan jelas (tidak buram/terpotong pencahayaan).
-                        </p>
-                      </div>
-
-                      {/* Selfie with KTP URL */}
-                      <div>
-                        <label htmlFor="selfie_url" className="mb-1 block text-sm font-medium text-gray-700">
-                          URL Selfie memegang KTP <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="selfie_url"
-                            type="url"
                             required
-                            value={selfieUrl}
-                            onChange={(e) => setSelfieUrl(e.target.value)}
-                            disabled={isSubmitting}
-                            className={inputClass}
-                            placeholder="https://..."
-                        />
-                      </div>
-
-                      {/* Social media links grid array module */}
-                      <div>
-                        <div className="mb-2 flex items-center justify-between">
-                          <label className="text-sm font-medium text-gray-700">
-                            Tautan Media Sosial <span className="text-red-500">*</span>
-                          </label>
-                          {/* FIX: Bersihkan token warna hover text kurung v4 */}
+                          />
                           <button
-                              type="button"
-                              onClick={addSocialLink}
-                              disabled={isSubmitting}
-                              className="text-xs font-semibold text-primary hover:text-primary-dark disabled:opacity-50 cursor-pointer"
+                            type="button"
+                            onClick={() => removeSocialLink(index)}
+                            disabled={isSubmitting || socialLinks.length <= 1}
+                            className="flex items-center justify-center rounded-lg border border-gray-200 px-2 text-gray-400 hover:border-red-300 hover:text-red-500 disabled:opacity-30 cursor-pointer transition"
+                            aria-label="Hapus tautan"
                           >
-                            + Tambah Tautan
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </div>
-                        <div className="space-y-2">
-                          {socialLinks.map((link, index) => (
-                              <div key={index} className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={link.platform}
-                                    onChange={(e) => updateSocialLink(index, 'platform', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                                    placeholder="Platform (Contoh: Instagram)"
-                                    required
-                                />
-                                <input
-                                    type="url"
-                                    value={link.url}
-                                    onChange={(e) => updateSocialLink(index, 'url', e.target.value)}
-                                    disabled={isSubmitting}
-                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                                    placeholder="https://instagram.com/username"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => removeSocialLink(index)}
-                                    disabled={isSubmitting || socialLinks.length <= 1}
-                                    className="flex items-center justify-center rounded-lg border border-gray-200 px-2 text-gray-400 hover:border-red-300 hover:text-red-500 disabled:opacity-30 cursor-pointer transition"
-                                    aria-label="Hapus tautan media sosial"
-                                >
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                          ))}
-                        </div>
-                        <p className="mt-1.5 text-[11px] text-gray-400">Minimal wajib menyertakan 1 tautan profil media sosial aktif untuk tracking validasi otentikasi identitas jastiper.</p>
-                      </div>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-400">Minimal 1 tautan media sosial aktif.</p>
+                  </div>
 
-                      {/* Bio descriptions info */}
-                      <div>
-                        <label htmlFor="bio" className="mb-1 block text-sm font-medium text-gray-700">
-                          Bio Pengguna <span className="text-gray-400 font-normal text-xs">(opsional)</span>
-                        </label>
-                        <textarea
-                            id="bio"
-                            rows={3}
-                            value={bio}
-                            onChange={(e) => setBio(e.target.value)}
-                            disabled={isSubmitting}
-                            className={inputClass + " resize-none"}
-                            placeholder="Tulis ringkasan singkat profil Anda..."
-                        />
-                      </div>
+                  <div>
+                    <label htmlFor="bio" className="mb-1 block text-sm font-medium text-gray-700">
+                      Bio <span className="text-gray-400 font-normal">(opsional)</span>
+                    </label>
+                    <textarea
+                      id="bio"
+                      rows={3}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      disabled={isSubmitting}
+                      className={inputClass + ' resize-none'}
+                      placeholder="Ceritakan sedikit tentang diri Anda sebagai calon Jastiper..."
+                    />
+                  </div>
 
-                      {/* Submission error feedback box indicator */}
-                      {submitError && (
-                          <div role="alert" className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-600 font-medium animate-in fade-in duration-150">
-                            {submitError}
-                          </div>
-                      )}
+                  {submitError && (
+                    <p role="alert" className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-600">
+                      {submitError}
+                    </p>
+                  )}
 
-                      {/* Submit operational trigger mutation call button */}
-                      <button
-                          type="submit"
-                          disabled={isSubmitting || !!ktpError}
-                          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer text-center"
-                      >
-                        {isSubmitting ? 'Mengirim Berkas Pengajuan...' : 'Kirim Berkas KYC'}
-                      </button>
-                    </form>
-                  </>
-              )}
-            </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !!ktpError}
+                    className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
+                  >
+                    {isSubmitting ? 'Mengirim...' : 'Kirim KYC'}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
+    </div>
   );
 }

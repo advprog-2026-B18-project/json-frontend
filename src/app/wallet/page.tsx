@@ -20,10 +20,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useAuthorizedFetch } from '@/lib/api/useAuthorizedFetch';
 import { isApiError } from '@/services/api-client';
-import { Navbar } from '@/components/Navbar';
 import {
   generateIdempotencyKey,
   type WalletResponse,
@@ -404,11 +404,11 @@ export default function WalletPage() {
   if (!accessToken) return null;
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
 
-        <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">Dompet JSON Saya</h1>
+      <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dompet JSON Saya</h1>
 
           {/* Success toast */}
           {successMessage && (

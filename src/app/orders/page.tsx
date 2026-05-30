@@ -48,8 +48,7 @@ export default function OrdersPage() {
     setLoading(true);
     setError('');
     try {
-      const params: Record<string, number | string> = { page, limit, sort_by: 'created_at', order: 'Desc' };
-      const result = await getMyPurchases(accessToken, params);
+      const result = await getMyPurchases(accessToken, { sort_by: 'created_at', order: 'Desc' });
       const allOrders = result.data;
       const filtered = statusFilter === 'ALL'
         ? allOrders

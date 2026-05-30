@@ -15,6 +15,7 @@ import {
   type ProductResponse,
   type PaginatedProducts,
 } from '@/services/inventory.service';
+import { getJastiperRatings } from '@/services/order.service';
 import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ function ProductCard({ product }: { product: ProductResponse }) {
           className="group rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition overflow-hidden block"
       >
         <div className="aspect-square bg-gray-100 overflow-hidden">
-          {product.images[0] ? (
+          {product.images?.[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                   src={product.images[0]}
@@ -87,7 +88,7 @@ function ProductCard({ product }: { product: ProductResponse }) {
         <div className="p-3">
           <p className="text-sm font-medium text-gray-800 line-clamp-2">{product.name}</p>
           <p className="mt-1 text-sm font-semibold text-primary-dark">{formatRupiah(product.price)}</p>
-          {product.stats.avgRating > 0 && (
+          {product.stats?.avgRating > 0 && (
               <div className="mt-1">
                 <RatingStars rating={product.stats.avgRating} />
               </div>
@@ -122,7 +123,10 @@ export default function JastiperProfilePage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
 
-  // Fetch profile metadata
+  const [jastiperRatings, setJastiperRatings] = useState<any[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+
+  // Fetch profile
   useEffect(() => {
     if (!username) return;
     let cancelled = false;
@@ -144,12 +148,21 @@ export default function JastiperProfilePage() {
     return () => { cancelled = true; };
   }, [username]);
 
-  // Fetch products jastiper catalog catalog
+  // Fetch jastiper ratings
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    setRatingsLoading(true);
+    getJastiperRatings(profile.user_id, { page: 1, limit: 10 })
+      .then((data) => setJastiperRatings(data.data ?? []))
+      .catch(() => setJastiperRatings([]))
+      .finally(() => setRatingsLoading(false));
+  }, [profile?.user_id]);
+
+  // Fetch products
   const fetchProducts = useCallback(async (q: string, pg: number) => {
     if (!username) return;
     setProductsLoading(true);
     try {
-      // FIX CRITICAL: pg - 1 dikonversi karena penampung Pageable data Spring Boot bernilai 0-based index
       const data: PaginatedProducts = await getJastiperCatalog(username, {
         q: q || undefined,
         page: pg - 1,
@@ -172,7 +185,7 @@ export default function JastiperProfilePage() {
     fetchProducts(search, page);
   }, [fetchProducts, search, page]);
 
-  // Debounced search timer
+  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput);
@@ -181,7 +194,7 @@ export default function JastiperProfilePage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Render State: Loading Guard
+  // Render: Loading
   if (profileLoading) {
     return (
         <div className="min-h-screen bg-gray-50">
@@ -205,14 +218,14 @@ export default function JastiperProfilePage() {
     );
   }
 
-  // Render State: Not Found Profile Guard
+  // Render: Not Found
   if (profileError === 'not_found') {
     return (
         <div className="min-h-screen bg-gray-50">
           <Navbar />
           <main className="flex flex-col items-center justify-center px-4 py-32 text-center">
             <p className="text-2xl font-bold text-gray-800 mb-2">Profil tidak ditemukan</p>
-            <p className="text-gray-500 mb-6">Pengguna dengan nama akun &quot;{username}&quot; tidak terdaftar di platform JSON.</p>
+            <p className="text-gray-500 mb-6">Pengguna dengan nama akun "{username}" tidak terdaftar di platform JSON.</p>
             <Link href="/catalog" className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition">
               Kembali ke Katalog
             </Link>
@@ -227,7 +240,7 @@ export default function JastiperProfilePage() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
 
-        {/* Profile Jastiper Info Board */}
+        {/* Profile Header */}
         <div className="bg-white border-b border-gray-100">
           <div className="mx-auto max-w-4xl px-4 py-8">
             {profile.status === 'PENDING_VERIFICATION' && (
@@ -242,7 +255,7 @@ export default function JastiperProfilePage() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
-              {/* Avatar Profile Picture */}
+              {/* Avatar */}
               <div className="shrink-0">
                 {profile.profile_picture_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -258,7 +271,7 @@ export default function JastiperProfilePage() {
                 )}
               </div>
 
-              {/* Profile Meta Info Deck */}
+              {/* Profile Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{profile.username}</h1>
@@ -271,7 +284,7 @@ export default function JastiperProfilePage() {
                   Bergabung sejak {formatDate(profile.member_since)}
                 </p>
 
-                {/* Jastiper Stats Module */}
+                {/* Stats */}
                 {profile.stats && (
                     <div className="flex flex-wrap gap-6 mb-3 border-t border-gray-50 pt-3">
                       <div className="text-left">
@@ -293,7 +306,7 @@ export default function JastiperProfilePage() {
                     </div>
                 )}
 
-                {/* Reputational Badges */}
+                {/* Badges */}
                 {profile.badges && profile.badges.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {profile.badges.map((badge) => (
@@ -301,8 +314,8 @@ export default function JastiperProfilePage() {
                               key={badge}
                               className="inline-flex items-center rounded-full bg-secondary-light px-2.5 py-0.5 text-xs font-semibold text-gray-800"
                           >
-                      {badge}
-                    </span>
+                        {badge}
+                      </span>
                       ))}
                     </div>
                 )}
@@ -311,13 +324,12 @@ export default function JastiperProfilePage() {
           </div>
         </div>
 
-        {/* Catalog Grid Section */}
+        {/* Catalog Section */}
         <div className="mx-auto max-w-4xl px-4 py-8">
           <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-gray-800">
               Katalog Produk Jastip {profile.username}
             </h2>
-            {/* Search Bar Input */}
             <div className="relative w-full sm:w-64">
               <input
                   type="text"
@@ -364,7 +376,6 @@ export default function JastiperProfilePage() {
                   ))}
                 </div>
 
-                {/* Pagination Controls */}
                 {pagination.total_pages > 1 && (
                     <div className="mt-8 flex items-center justify-center gap-2">
                       <button
@@ -375,8 +386,8 @@ export default function JastiperProfilePage() {
                         ← Sebelumnya
                       </button>
                       <span className="text-sm font-medium text-gray-600">
-                  {page} / {pagination.total_pages}
-                </span>
+                    {page} / {pagination.total_pages}
+                  </span>
                       <button
                           onClick={() => setPage((p) => Math.min(pagination.total_pages, p + 1))}
                           disabled={page >= pagination.total_pages}
@@ -387,6 +398,56 @@ export default function JastiperProfilePage() {
                     </div>
                 )}
               </>
+          )}
+        </div>
+
+        {/* Jastiper Ratings */}
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          <h2 className="mb-3 text-lg font-bold text-gray-900">Ulasan tentang Jastiper</h2>
+          {ratingsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="h-4 w-32 rounded bg-gray-200 mb-2" />
+                  <div className="h-3 w-full rounded bg-gray-100" />
+                </div>
+              ))}
+            </div>
+          ) : jastiperRatings.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+              <p className="text-sm text-gray-500">Belum ada ulasan untuk jastiper ini.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {jastiperRatings.map((r, i) => {
+                const rating = r.jastiper_rating ?? r.rating ?? 0;
+                const review = r.jastiper_review ?? r.review ?? null;
+                const titipersUsername = r.titipers_username ?? null;
+                const date = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '';
+                return (
+                  <div key={r.rating_jastiper_id ?? i} className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          {(titipersUsername?.[0] ?? 'P').toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{titipersUsername ?? 'Pembeli'}</p>
+                          {titipersUsername && (
+                            <p className="text-xs text-gray-400">@{titipersUsername}</p>
+                          )}
+                        </div>
+                      </div>
+                      {date && <p className="text-xs text-gray-400">{date}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 mb-1 ml-9">
+                      <RatingStars rating={rating} />
+                    </div>
+                    {review && <p className="text-sm text-gray-600 mt-1 ml-9">{review}</p>}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

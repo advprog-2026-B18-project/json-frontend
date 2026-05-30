@@ -275,21 +275,36 @@ export interface GetOrderHistoryResponse {
 /**
  * Get My Purchases Response
  * Response from GET /orders/my/purchases endpoint.
+ * NOTE: backend returns `data` as Order[] directly with `pagination` at root level,
+ * NOT nested inside `data`.
  */
 export interface GetMyPurchasesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
  * Get My Sales Response
  * Response from GET /orders/my/sales endpoint.
+ * Same shape as GetMyPurchasesResponse.
  */
 export interface GetMySalesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -406,3 +421,38 @@ export interface AdminForceCancelResponse {
 export const ordersApi = {
   fetch: ordersFetch,
 };
+
+/**
+ * Product Rating List Response (unwrapped)
+ * Response from GET /products/{product_id}/ratings endpoint after auto-unwrap.
+ * Flat structure: average_rating, total, page, limit, ratings[]
+ */
+export interface ProductRatingListResponse {
+  ratings: (ProductRating & { titipers_username?: string })[];
+  total: number;
+  page: number;
+  limit: number;
+  average_rating: number;
+}
+
+/**
+ * Jastiper Rating List Response (unwrapped)
+ * Response from GET /jastipers/{jastiper_id}/ratings endpoint after auto-unwrap.
+ */
+export interface JastiperRatingListResponse {
+  data: (JastiperRating & { titipers_username?: string })[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
+}
+
+/**
+ * Admin Get Order Response (unwrapped)
+ * Response from GET /admin/orders/{order_id} endpoint after auto-unwrap.
+ */
+export interface AdminGetOrderResponse {
+  data: Order;
+}
