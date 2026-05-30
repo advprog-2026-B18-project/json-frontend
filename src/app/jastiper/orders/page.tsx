@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -31,7 +31,7 @@ const STATUS_TABS: { value: string; label: string }[] = [
   { value: 'CANCELLED', label: 'Dibatalkan' },
 ];
 
-export default function JastiperOrdersPage() {
+function JastiperOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { accessToken, user, isLoading: authLoading } = useAuth();
@@ -298,5 +298,17 @@ export default function JastiperOrdersPage() {
         </div>
       </ConfirmModal>
     </div>
+  );
+}
+
+export default function JastiperOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-(--color-primary) border-t-transparent" />
+      </div>
+    }>
+      <JastiperOrdersContent />
+    </Suspense>
   );
 }
