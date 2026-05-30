@@ -22,10 +22,10 @@ export class ApiError extends Error {
   readonly extra?: Record<string, unknown>;
 
   constructor(
-      status: number,
-      message: string,
-      field?: string,
-      extra?: Record<string, unknown>
+    status: number,
+    message: string,
+    field?: string,
+    extra?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -70,15 +70,16 @@ async function tryReadJson(res: Response): Promise<unknown> {
   }
 }
 
-function normalizeEnvelopeError(status: number, body: unknown): ApiError {
+// Dari stash: di-export agar bisa dipakai di luar (testing, custom error handling)
+export function normalizeEnvelopeError(status: number, body: unknown): ApiError {
   const b = body as EnvelopeError | null;
   const firstError = b?.errors?.[0];
   const field = firstError?.field ?? undefined;
   const message =
-      firstError?.message ??
-      firstError?.error ??
-      b?.message ??
-      `Request failed (HTTP ${status}).`;
+    firstError?.message ??
+    firstError?.error ??
+    b?.message ??
+    `Request failed (HTTP ${status}).`;
   return new ApiError(status, message, field);
 }
 
@@ -87,7 +88,6 @@ function normalizeProblemDetailsError(status: number, body: unknown): ApiError {
   const httpStatus = b?.status ?? status;
   const message = b?.detail ?? b?.title ?? `Request failed (HTTP ${httpStatus}).`;
 
-  // Collect extra fields (everything except the standard Problem Details keys)
   const standardKeys = new Set(['type', 'title', 'status', 'detail', 'instance']);
   const extra: Record<string, unknown> = {};
   if (b) {
@@ -158,7 +158,6 @@ export async function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
     }
   }
 
-  // For envelope responses, unwrap the `data` field if present
   if (errorShape === 'envelope' && responseBody !== null && typeof responseBody === 'object') {
     const env = responseBody as { data?: T };
     if ('data' in env) return env.data as T;
@@ -173,36 +172,48 @@ export async function apiRequest<T>(options: ApiRequestOptions): Promise<T> {
 
 type ServiceRequestOptions = Omit<ApiRequestOptions, 'baseUrl' | 'errorShape' | 'path'>;
 
-export function authRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
-  const isClient = typeof window !== 'undefined';
-  const baseUrl = isClient ? '/api/auth' : process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
-  if (!baseUrl) throw new Error('AUTH_SERVICE_URL is not set.');
+// Dari stash: helper di-extract jadi fungsi tersendiri — lebih DRY dari inline di tiap factory
+export function serviceBaseUrl(envKey: string, proxyPath: string): string {
+  if (typeof window !== 'undefined') return proxyPath;
+  const value = process.env[envKey];
+  if (!value) throw new Error(`Environment variable ${envKey} is not set.`);
+  return value;
+}
 
-  return apiRequest<T>({ ...options, baseUrl, path, errorShape: 'envelope' });
+export function authRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
+  return apiRequest<T>({
+    ...options,
+    baseUrl: serviceBaseUrl('NEXT_PUBLIC_AUTH_SERVICE_URL', '/api/auth'),
+    path,
+    errorShape: 'envelope',
+  });
 }
 
 export function inventoryRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
-  const isClient = typeof window !== 'undefined';
-  const baseUrl = isClient ? '/api/inventory' : process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL;
-  if (!baseUrl) throw new Error('INVENTORY_SERVICE_URL is not set.');
-
-  return apiRequest<T>({ ...options, baseUrl, path, errorShape: 'envelope' });
+  return apiRequest<T>({
+    ...options,
+    baseUrl: serviceBaseUrl('NEXT_PUBLIC_INVENTORY_SERVICE_URL', '/api/inventory'),
+    path,
+    errorShape: 'envelope',
+  });
 }
 
 export function orderRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
-  const isClient = typeof window !== 'undefined';
-  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
-  if (!baseUrl) throw new Error('ORDER_SERVICE_URL is not set.');
-
-  return apiRequest<T>({ ...options, baseUrl, path, errorShape: 'envelope' });
+  return apiRequest<T>({
+    ...options,
+    baseUrl: serviceBaseUrl('NEXT_PUBLIC_ORDER_SERVICE_URL', '/api/order'),
+    path,
+    errorShape: 'envelope',
+  });
 }
 
 export function paymentRequest<T>(path: string, options: ServiceRequestOptions): Promise<T> {
-  const isClient = typeof window !== 'undefined';
-  const baseUrl = isClient ? '/api/payment' : process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL;
-  if (!baseUrl) throw new Error('PAYMENT_SERVICE_URL is not set.');
-
-  return apiRequest<T>({ ...options, baseUrl, path, errorShape: 'problem-details' });
+  return apiRequest<T>({
+    ...options,
+    baseUrl: serviceBaseUrl('NEXT_PUBLIC_PAYMENT_SERVICE_URL', '/api/payment'),
+    path,
+    errorShape: 'problem-details',
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -216,48 +227,31 @@ export type ApiService = 'auth' | 'payment' | 'inventory' | 'orders';
  * Matches the `apiFetchFrom(service, path, options)` contract from the spec.
  */
 export function apiFetchFrom<T>(
-    service: ApiService,
-    path: string,
-    options?: {
-      method?: string;
-      body?: unknown;
-      token?: string;
-      headers?: Record<string, string>;
-    }
+  service: ApiService,
+  path: string,
+  options?: {
+    method?: string;
+    body?: unknown;
+    token?: string;
+    headers?: Record<string, string>;
+  }
 ): Promise<T> {
-  let baseUrl: string | undefined;
-  let errorShape: ApiErrorShape;
+  const serviceConfig: Record<ApiService, { envKey: string; proxyPath: string; errorShape: ApiErrorShape }> = {
+    auth:      { envKey: 'NEXT_PUBLIC_AUTH_SERVICE_URL',      proxyPath: '/api/auth',      errorShape: 'envelope' },
+    payment:   { envKey: 'NEXT_PUBLIC_PAYMENT_SERVICE_URL',   proxyPath: '/api/payment',   errorShape: 'problem-details' },
+    inventory: { envKey: 'NEXT_PUBLIC_INVENTORY_SERVICE_URL', proxyPath: '/api/inventory', errorShape: 'envelope' },
+    orders:    { envKey: 'NEXT_PUBLIC_ORDER_SERVICE_URL',      proxyPath: '/api/order',     errorShape: 'envelope' },
+  };
 
-  const isClient = typeof window !== 'undefined';
-
-  switch (service) {
-    case 'auth':
-      baseUrl = isClient ? '/api/auth' : process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
-      errorShape = 'envelope';
-      break;
-    case 'payment':
-      baseUrl = isClient ? '/api/payment' : process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL;
-      errorShape = 'problem-details';
-      break;
-    case 'inventory':
-      baseUrl = isClient ? '/api/inventory' : process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL;
-      errorShape = 'envelope';
-      break;
-    case 'orders':
-      // Mengarah ke rewrite /api/order yang sudah lu setup
-      baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
-      errorShape = 'envelope';
-      break;
-    default:
-      throw new Error(`Unknown service: ${service}`);
+  // Dari remote: defensive guard untuk service yang tidak dikenal
+  if (!(service in serviceConfig)) {
+    throw new Error(`Unknown service: ${service}`);
   }
 
-  if (!baseUrl) {
-    throw new Error(`Environment variable for service ${service} is not set.`);
-  }
+  const { envKey, proxyPath, errorShape } = serviceConfig[service];
 
   return apiRequest<T>({
-    baseUrl,
+    baseUrl: serviceBaseUrl(envKey, proxyPath),
     path,
     method: (options?.method as ApiRequestOptions['method']) ?? 'GET',
     body: options?.body,
@@ -273,12 +267,12 @@ export function apiFetchFrom<T>(
  * Does NOT prepend a service base URL — `path` must be an absolute path like `/api/auth/login`.
  */
 export async function appFetch<T>(
-    path: string,
-    options?: {
-      method?: string;
-      body?: unknown;
-      headers?: Record<string, string>;
-    }
+  path: string,
+  options?: {
+    method?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+  }
 ): Promise<T> {
   const res = await fetch(path, {
     method: options?.method ?? 'GET',
@@ -302,24 +296,24 @@ export async function appFetch<T>(
 
 /** Convenience wrapper — Auth service */
 export const authFetch = <T>(
-    path: string,
-    opts?: Parameters<typeof apiFetchFrom>[2]
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
 ): Promise<T> => apiFetchFrom<T>('auth', path, opts);
 
 /** Convenience wrapper — Payment service */
 export const paymentFetch = <T>(
-    path: string,
-    opts?: Parameters<typeof apiFetchFrom>[2]
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
 ): Promise<T> => apiFetchFrom<T>('payment', path, opts);
 
 /** Convenience wrapper — Inventory service */
 export const inventoryFetch = <T>(
-    path: string,
-    opts?: Parameters<typeof apiFetchFrom>[2]
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
 ): Promise<T> => apiFetchFrom<T>('inventory', path, opts);
 
 /** Convenience wrapper — Orders service */
 export const ordersFetch = <T>(
-    path: string,
-    opts?: Parameters<typeof apiFetchFrom>[2]
+  path: string,
+  opts?: Parameters<typeof apiFetchFrom>[2]
 ): Promise<T> => apiFetchFrom<T>('orders', path, opts);

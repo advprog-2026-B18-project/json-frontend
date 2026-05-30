@@ -205,9 +205,9 @@ export default function AdminDashboardPage() {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                {kycRequests.map((req) => (
+                                {kycRequests.map((req, idx) => (
                                     <tr
-                                        key={req.submission_id}
+                                        key={req.submission_id || idx}
                                         onClick={() => router.push('/admin/kyc')}
                                         className="hover:bg-gray-50 transition cursor-pointer"
                                     >

@@ -21,6 +21,7 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { SkeletonLoader } from '@/components/SkeletonLoader';
 import { useToast } from '@/components/Toast';
+import { getPublicProfileById, type PublicProfileResponse } from '@/services/auth.service';
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -42,6 +43,7 @@ export default function JastiperOrderDetailPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [history, setHistory] = useState<OrderHistory[]>([]);
+  const [buyerInfo, setBuyerInfo] = useState<PublicProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -72,6 +74,14 @@ export default function JastiperOrderDetailPage() {
       ]);
       setOrder(orderData);
       setHistory(historyData);
+
+      // Fetch buyer profile
+      try {
+        const buyer = await getPublicProfileById(orderData.titipers_id);
+        setBuyerInfo(buyer);
+      } catch {
+        // Buyer profile might not be accessible — fall back to showing just the ID
+      }
     } catch (err) {
       if (isApiError(err)) {
         setError(err.message || 'Gagal memuat detail pesanan');
@@ -227,10 +237,10 @@ export default function JastiperOrderDetailPage() {
                       </div>
                       <div className="pb-6">
                         <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                          {step === 'PENDING' && 'Menunggu Pembayaran'}
+                          {step === 'PENDING' && 'Menunggu dibayar titipers'}
                           {step === 'PAID' && 'Dibayar'}
                           {step === 'PURCHASED' && 'Dibeli Jastiper'}
-                          {step === 'SHIPPED' && 'Dikirim'}
+                          {step === 'SHIPPED' && 'Dikirim — Menunggu konfirmasi titipers'}
                           {step === 'COMPLETED' && 'Selesai'}
                         </p>
                         {timestamp && (
@@ -270,7 +280,10 @@ export default function JastiperOrderDetailPage() {
             {/* Product Snapshot */}
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Detail Produk</h2>
-              <div className="flex gap-4">
+              <Link
+                href={`/catalog/${order.product_snapshot?.product_id ?? order.product_id}`}
+                className="flex gap-4 group"
+              >
                 <div className="h-20 w-20 shrink-0 rounded-lg bg-gray-100 overflow-hidden">
                   {order.product_snapshot?.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -288,7 +301,7 @@ export default function JastiperOrderDetailPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-gray-900 group-hover:text-(--color-primary) transition-colors">
                     {order.product_snapshot?.name ?? 'Produk'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -303,15 +316,42 @@ export default function JastiperOrderDetailPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Buyer Info */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900 mb-2">Pembeli</h2>
-              <p className="text-sm text-gray-600">
-                ID Titipers: {order.titipers_id}
-              </p>
+            <div className="rounded-xl bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Pembeli (TITIPERS)</h2>
+              {buyerInfo ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-gray-100">
+                    {buyerInfo.profile_picture_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={buyerInfo.profile_picture_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-(--color-primary)/10 text-(--color-primary) font-semibold text-sm">
+                        {(buyerInfo.full_name ?? buyerInfo.username ?? '?')[0].toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {buyerInfo.full_name ?? buyerInfo.username ?? order.titipers_id.slice(0, 8) + '...'}
+                    </p>
+                    {buyerInfo.username && (
+                      <p className="text-xs text-gray-500">@{buyerInfo.username}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  {order.titipers_id.slice(0, 8)}...
+                </p>
+              )}
             </div>
 
             {/* Shipping Address */}

@@ -14,6 +14,7 @@ import type { ProductResponse, ProductStatus } from '@/services/inventory.servic
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { Navbar } from '@/components/Navbar';
 
+
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -106,7 +107,7 @@ const STATUS_TABS: { label: string; value: ProductStatus | '' }[] = [
 
 export default function JastiperCatalogPage() {
   const router = useRouter();
-  const { accessToken, user, isLoading: authLoading } = useAuth();
+  const { accessToken, isLoading: authLoading } = useAuth();
 
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [totalItems, setTotalItems] = useState(0);

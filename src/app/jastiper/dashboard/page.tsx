@@ -66,7 +66,7 @@ export default function JastiperDashboardPage() {
     setError('');
     try {
       const [ordersData, walletData] = await Promise.all([
-        getMySales(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }).catch(() => ({ data: [] })),
+        getMySales(accessToken).catch(() => ({ data: [] })),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
 
@@ -89,6 +89,17 @@ export default function JastiperDashboardPage() {
       fetchDashboard();
     }
   }, [authLoading, accessToken, user, fetchDashboard]);
+
+  // Auto-refresh saat tab kembali aktif
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        fetchDashboard();
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchDashboard]);
 
   const aktifOrders = orders.filter((o) => ['PAID', 'PURCHASED', 'SHIPPED'].includes(o.status));
   const completedOrders = orders.filter((o) => o.status === 'COMPLETED');

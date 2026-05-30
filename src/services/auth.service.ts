@@ -355,6 +355,18 @@ export async function getPublicProfile(username: string): Promise<PublicProfileR
 }
 
 // ---------------------------------------------------------------------------
+// getPublicProfileById
+// GET /profile/id/{id}
+// Public — no token required, returns PublicProfileResponse
+// ---------------------------------------------------------------------------
+
+export async function getPublicProfileById(id: string): Promise<PublicProfileResponse> {
+  return authRequest<PublicProfileResponse>(`/profile/id/${id}`, {
+    method: 'GET',
+  });
+}
+
+// ---------------------------------------------------------------------------
 // submitKyc
 // POST /profile/me/kyc
 // Protected — TITIPERS role only (JASTIPER/ADMIN receive 403)
