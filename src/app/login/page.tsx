@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
-import { login, isApiError } from '@/services/auth.service';
+import { login, isApiError, getMyProfile } from '@/services/auth.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 // ---------------------------------------------------------------------------
@@ -30,12 +30,11 @@ function LoginForm() {
     try {
       const data = await login({ email, password });
 
-      const token = data.access_token || (data as any).token;
+      const token = (data as any).access_token || (data as any).token || (data as any).refresh_token;
 
       if (!token) {
         throw new Error('Token otentikasi tidak ditemukan dalam respon server.');
       }
-
 
       const profileData = await getMyProfile(token);
 
