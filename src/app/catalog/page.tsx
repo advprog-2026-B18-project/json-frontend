@@ -8,10 +8,6 @@ import { searchProducts, getCategories } from '@/services/inventory.service';
 import type { ProductResponse, CategoryResponse } from '@/services/inventory.service';
 import { Navbar } from '@/components/Navbar';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -20,9 +16,6 @@ function formatRupiah(amount: number) {
   }).format(amount);
 }
 
-// ---------------------------------------------------------------------------
-// RatingStars
-// ---------------------------------------------------------------------------
 function RatingStars({ rating }: { rating: number }) {
   return (
       <span className="inline-flex items-center gap-0.5">
@@ -41,9 +34,6 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// ProductCard
-// ---------------------------------------------------------------------------
 function ProductCard({ product }: { product: ProductResponse }) {
   const p = product as any;
   const productId = p.productId || p.product_id;
@@ -54,7 +44,7 @@ function ProductCard({ product }: { product: ProductResponse }) {
   return (
       <Link
           href={`/catalog/${productId}`}
-          className="group relative rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition overflow-hidden"
+          className="group relative rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition overflow-hidden block"
       >
         {p.mode === 'FLASH_SALE' && (
             <span className="absolute top-2 right-2 z-10 rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
@@ -108,9 +98,6 @@ function ProductCard({ product }: { product: ProductResponse }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// ProductCard skeleton
-// ---------------------------------------------------------------------------
 function ProductCardSkeleton() {
   return (
       <div className="rounded-xl border border-gray-100 bg-white overflow-hidden animate-pulse">
@@ -124,74 +111,79 @@ function ProductCardSkeleton() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Inner catalog component (uses useSearchParams — needs Suspense)
-// ---------------------------------------------------------------------------
 function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [q, setQ] = useState(searchParams.get('q') ?? '');
-  const [qInput, setQInput] = useState(searchParams.get('q') ?? '');
-  const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') ?? '');
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '');
-  const [originCountry, setOriginCountry] = useState(searchParams.get('origin_country') ?? '');
-  const [dateFrom, setDateFrom] = useState(searchParams.get('purchase_date_from') ?? '');
-  const [dateTo, setDateTo] = useState(searchParams.get('purchase_date_to') ?? '');
-  const [sortBy, setSortBy] = useState<'created_at' | 'rating' | 'purchase_date'>(
-      (searchParams.get('sortBy') as 'created_at' | 'rating' | 'purchase_date') ?? 'created_at'
-  );
-  const [order, setOrder] = useState<'asc' | 'desc'>(
-      (searchParams.get('order') as 'asc' | 'desc') ?? 'desc'
-  );
-  const [page, setPage] = useState(Number(searchParams.get('page') ?? '1'));
+  const [qInput, setQInput] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [originCountry, setOriginCountry] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<'created_at' | 'purchase_date' | 'rating'>('created_at');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
 
   const [products, setProducts] = useState<ProductResponse[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
 
   const LIMIT = 20;
-
-  const syncUrl = useCallback((params: Record<string, string>) => {
-    const sp = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) {
-      if (v) sp.set(k, v);
-    }
-    router.replace(`/catalog?${sp.toString()}`, { scroll: false });
-  }, [router]);
 
   useEffect(() => {
     getCategories().then(setCategories).catch(() => {});
   }, []);
 
   useEffect(() => {
+    const currentQ = searchParams.get('q') ?? '';
+    const currentCategoryId = searchParams.get('categoryId') ?? '';
+    const currentMinPrice = searchParams.get('minPrice') ?? '';
+    const currentMaxPrice = searchParams.get('maxPrice') ?? '';
+    const currentOrigin = searchParams.get('origin_country') ?? '';
+    const currentFrom = searchParams.get('purchase_date_from') ?? '';
+    const currentTo = searchParams.get('purchase_date_to') ?? '';
+    const currentSortBy = (searchParams.get('sortBy') as any) ?? 'created_at';
+    const currentOrder = (searchParams.get('order') as any) ?? 'desc';
+    const currentPage = Number(searchParams.get('page') ?? '1');
+
+    setQInput(currentQ);
+    setCategoryId(currentCategoryId);
+    setMinPrice(currentMinPrice);
+    setMaxPrice(currentMaxPrice);
+    setOriginCountry(currentOrigin);
+    setDateFrom(currentFrom);
+    setDateTo(currentTo);
+    setSortBy(currentSortBy);
+    setOrder(currentOrder);
+    setPage(currentPage);
+
     let cancelled = false;
     setLoading(true);
     setError('');
 
     searchProducts({
-      q: q || undefined,
-      categoryId: categoryId ? Number(categoryId) : undefined,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      origin_country: originCountry || undefined,
-      purchase_date_from: dateFrom || undefined,
-      purchase_date_to: dateTo || undefined,
-      sortBy,
-      order,
-      page,
+      q: currentQ || undefined,
+      categoryId: currentCategoryId ? Number(currentCategoryId) : undefined,
+      minPrice: currentMinPrice ? Number(currentMinPrice) : undefined,
+      maxPrice: currentMaxPrice ? Number(currentMaxPrice) : undefined,
+      origin_country: currentOrigin || undefined,
+      purchase_date_from: currentFrom || undefined,
+      purchase_date_to: currentTo || undefined,
+      sortBy: currentSortBy,
+      order: currentOrder,
+      page: currentPage,
       limit: LIMIT,
     })
         .then((data) => {
           if (cancelled) return;
-          setProducts(data.data);
-          setTotalItems(data.pagination.total);
-          setTotalPages(data.pagination.total_pages);
+          setProducts(data.data || []);
+          setTotalItems(data.pagination?.total || 0);
+          setTotalPages(data.pagination?.total_pages || 1);
         })
         .catch(() => {
           if (!cancelled) setError('Gagal memuat produk. Coba lagi.');
@@ -201,39 +193,39 @@ function CatalogContent() {
         });
 
     return () => { cancelled = true; };
-  }, [q, categoryId, minPrice, maxPrice, originCountry, dateFrom, dateTo, sortBy, order, page]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setQ(qInput);
-      setPage(1);
-      syncUrl({ q: qInput, categoryId, minPrice, maxPrice, origin_country: originCountry, purchase_date_from: dateFrom, purchase_date_to: dateTo, sortBy, order, page: '1' });
-    }, 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qInput]);
+  }, [searchParams]);
 
   function applyFilters() {
-    setPage(1);
-    syncUrl({ q, categoryId, minPrice, maxPrice, origin_country: originCountry, purchase_date_from: dateFrom, purchase_date_to: dateTo, sortBy, order, page: '1' });
+    const sp = new URLSearchParams();
+    if (qInput.trim()) sp.set('q', qInput.trim());
+    if (categoryId) sp.set('categoryId', categoryId);
+    if (minPrice) sp.set('minPrice', minPrice);
+    if (maxPrice) sp.set('maxPrice', maxPrice);
+    if (originCountry.trim()) sp.set('origin_country', originCountry.trim());
+    if (dateFrom) sp.set('purchase_date_from', dateFrom);
+    if (dateTo) sp.set('purchase_date_to', dateTo);
+    sp.set('sortBy', sortBy);
+    sp.set('order', order);
+    sp.set('page', '1');
+
+    router.push(`/catalog?${sp.toString()}`);
   }
 
   function resetFilters() {
-    setQ(''); setQInput('');
-    setCategoryId(''); setMinPrice(''); setMaxPrice('');
+    setQInput(''); setCategoryId(''); setMinPrice(''); setMaxPrice('');
     setOriginCountry(''); setDateFrom(''); setDateTo('');
     setSortBy('created_at'); setOrder('desc');
-    setPage(1);
-    router.replace('/catalog', { scroll: false });
+    router.push('/catalog');
   }
 
   function changePage(newPage: number) {
-    setPage(newPage);
-    syncUrl({ q, categoryId, minPrice, maxPrice, origin_country: originCountry, purchase_date_from: dateFrom, purchase_date_to: dateTo, sortBy, order, page: String(newPage) });
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set('page', String(newPage));
+    router.push(`/catalog?${sp.toString()}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const inputClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary';
+  const inputClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary bg-white';
 
   return (
       <div className="min-h-screen bg-gray-50">
@@ -243,12 +235,11 @@ function CatalogContent() {
           <h1 className="mb-6 text-2xl font-bold text-gray-900">Katalog Produk</h1>
 
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Sidebar filters */}
             <aside className="w-full lg:w-64 shrink-0">
               <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-5 sticky top-20">
                 <h2 className="font-semibold text-gray-800">Filter</h2>
 
-                {/* Search */}
+                {/* Keyword */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">Kata Kunci</label>
                   <div className="relative">
@@ -265,7 +256,7 @@ function CatalogContent() {
                   </div>
                 </div>
 
-                {/* Category */}
+                {/* Kategori */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">Kategori</label>
                   <select
@@ -282,57 +273,27 @@ function CatalogContent() {
                   </select>
                 </div>
 
-                {/* Price range */}
+                {/* Batas Harga */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">Harga (IDR)</label>
                   <div className="flex gap-2">
-                    <input
-                        type="number"
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(e.target.value)}
-                        placeholder="Min"
-                        min={0}
-                        className={inputClass}
-                    />
-                    <input
-                        type="number"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(e.target.value)}
-                        placeholder="Max"
-                        min={0}
-                        className={inputClass}
-                    />
+                    <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" min={0} className={inputClass} />
+                    <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" min={0} className={inputClass} />
                   </div>
                 </div>
 
-                {/* Origin country */}
+                {/* Negara */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">Negara Asal</label>
-                  <input
-                      type="text"
-                      value={originCountry}
-                      onChange={(e) => setOriginCountry(e.target.value)}
-                      placeholder="Contoh: Japan"
-                      className={inputClass}
-                  />
+                  <input type="text" value={originCountry} onChange={(e) => setOriginCountry(e.target.value)} placeholder="Contoh: Japan" className={inputClass} />
                 </div>
 
-                {/* Purchase date range */}
+                {/* Jangka Waktu Pembelian */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">Tanggal Pembelian</label>
                   <div className="space-y-2">
-                    <input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className={inputClass}
-                    />
-                    <input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className={inputClass}
-                    />
+                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputClass} />
+                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputClass} />
                   </div>
                 </div>
 
@@ -343,36 +304,28 @@ function CatalogContent() {
                       value={`${sortBy}:${order}`}
                       onChange={(e) => {
                         const [s, o] = e.target.value.split(':');
-                        setSortBy(s as 'created_at' | 'rating' | 'purchase_date');
-                        setOrder(o as 'asc' | 'desc');
+                        setSortBy(s as any);
+                        setOrder(o as any);
                       }}
                       className={inputClass}
                   >
                     <option value="created_at:desc">Terbaru</option>
                     <option value="rating:desc">Rating Tertinggi</option>
-                    <option value="created_at:asc">Terlama</option>
+                    <option value="purchase_date:desc">Tanggal Beli Terbaru</option>
                   </select>
                 </div>
 
-                {/* Actions */}
                 <div className="flex flex-col gap-2 pt-1">
-                  <button
-                      onClick={applyFilters}
-                      className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:bg-primary-dark transition"
-                  >
+                  <button onClick={applyFilters} className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:bg-primary-dark transition cursor-pointer">
                     Terapkan Filter
                   </button>
-                  <button
-                      onClick={resetFilters}
-                      className="w-full rounded-lg border border-gray-300 py-2 text-sm text-gray-600 hover:bg-gray-50 transition"
-                  >
+                  <button onClick={resetFilters} className="w-full rounded-lg border border-gray-300 py-2 text-sm text-gray-600 hover:bg-gray-50 transition cursor-pointer">
                     Reset Filter
                   </button>
                 </div>
               </div>
             </aside>
 
-            {/* Main content */}
             <main className="flex-1 min-w-0">
               {!loading && !error && (
                   <p className="mb-4 text-sm text-gray-500">
@@ -381,9 +334,9 @@ function CatalogContent() {
               )}
 
               {error && (
-                  <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+                  <div role="alert" className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 flex items-center justify-between">
                     <span>{error}</span>
-                    <button onClick={() => setPage((p) => p)} className="underline ml-2">Coba lagi</button>
+                    <button onClick={applyFilters} className="underline ml-2 cursor-pointer">Coba lagi</button>
                   </div>
               )}
 
@@ -393,76 +346,32 @@ function CatalogContent() {
                   </div>
               ) : products.length === 0 ? (
                   <div className="py-20 text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-gray-500 mb-4">Tidak ada produk yang sesuai dengan filter Anda</p>
-                    <button
-                        onClick={resetFilters}
-                        className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark"
-                    >
+                    <p className="text-gray-500 mb-4">Tidak ada produk yang sesuai dengan kriteria filter Anda.</p>
+                    <button onClick={resetFilters} className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark cursor-pointer">
                       Reset Filter
                     </button>
                   </div>
               ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {products.map((p, index) => (<ProductCard key={p.productId || (p as any).product_id || (p as any).id || index} product={p} />))}
+                    {products.map((p, index) => (<ProductCard key={p.productId || index} product={p} />))}
                   </div>
               )}
 
               {/* Pagination */}
               {!loading && totalPages > 1 && (
                   <div className="mt-8 flex items-center justify-between">
-                    <p className="text-sm text-gray-500">
-                      Halaman {page} dari {totalPages}
-                    </p>
+                    <p className="text-sm text-gray-500">Halaman {page} dari {totalPages}</p>
                     <div className="flex items-center gap-1">
-                      <button
-                          onClick={() => changePage(1)}
-                          disabled={page <= 1}
-                          className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        «
-                      </button>
-                      <button
-                          onClick={() => changePage(page - 1)}
-                          disabled={page <= 1}
-                          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        ← Sebelumnya
-                      </button>
-
+                      <button onClick={() => changePage(1)} disabled={page <= 1} className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40 cursor-pointer">«</button>
+                      <button onClick={() => changePage(page - 1)} disabled={page <= 1} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 cursor-pointer">← Sebelumnya</button>
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         const start = Math.max(1, Math.min(page - 2, totalPages - 4));
                         return start + i;
                       }).map((p) => (
-                          <button
-                              key={p}
-                              onClick={() => changePage(p)}
-                              className={`rounded-lg border px-3 py-1.5 text-sm ${
-                                  p === page
-                                      ? 'border-primary bg-primary text-white'
-                                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                              }`}
-                          >
-                            {p}
-                          </button>
+                          <button key={p} onClick={() => changePage(p)} className={`rounded-lg border px-3 py-1.5 text-sm cursor-pointer ${p === page ? 'border-primary bg-primary text-white font-semibold' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{p}</button>
                       ))}
-
-                      <button
-                          onClick={() => changePage(page + 1)}
-                          disabled={page >= totalPages}
-                          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Berikutnya →
-                      </button>
-                      <button
-                          onClick={() => changePage(totalPages)}
-                          disabled={page >= totalPages}
-                          className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        »
-                      </button>
+                      <button onClick={() => changePage(page + 1)} disabled={page >= totalPages} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 cursor-pointer">Berikutnya →</button>
+                      <button onClick={() => changePage(totalPages)} disabled={page >= totalPages} className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40 cursor-pointer">»</button>
                     </div>
                   </div>
               )}
