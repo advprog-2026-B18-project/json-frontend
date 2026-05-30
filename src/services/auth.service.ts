@@ -358,6 +358,12 @@ export async function getPublicProfile(username: string): Promise<PublicProfileR
   });
 }
 
+export async function getPublicProfileById(userId: string): Promise<PublicProfileResponse> {
+  return authRequest<PublicProfileResponse>(`/profile/id/${encodeURIComponent(userId)}`, {
+    method: 'GET',
+  });
+}
+
 // ---------------------------------------------------------------------------
 // submitKyc
 // POST /profile/me/kyc

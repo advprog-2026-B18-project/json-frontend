@@ -15,7 +15,10 @@ import {
   type ProductResponse,
   type PaginatedProducts,
 } from '@/services/inventory.service';
-import { getJastiperRatings } from '@/services/order.service';
+import {
+  getJastiperRatings,
+  type JastiperRatingItem,
+} from '@/services/order.service';
 import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
@@ -123,8 +126,18 @@ export default function JastiperProfilePage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
 
-  const [jastiperRatings, setJastiperRatings] = useState<any[]>([]);
+  const [jastiperRatings, setJastiperRatings] = useState<JastiperRatingItem[]>([]);
   const [ratingsLoading, setRatingsLoading] = useState(false);
+
+  // Fetch jastiper ratings
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    setRatingsLoading(true);
+    getJastiperRatings(profile.user_id, { page: 1, limit: 10 })
+      .then((data) => setJastiperRatings(data.ratings ?? []))
+      .catch(() => setJastiperRatings([]))
+      .finally(() => setRatingsLoading(false));
+  }, [profile?.user_id]);
 
   // Fetch profile
   useEffect(() => {
@@ -147,16 +160,6 @@ export default function JastiperProfilePage() {
 
     return () => { cancelled = true; };
   }, [username]);
-
-  // Fetch jastiper ratings
-  useEffect(() => {
-    if (!profile?.user_id) return;
-    setRatingsLoading(true);
-    getJastiperRatings(profile.user_id, { page: 1, limit: 10 })
-      .then((data) => setJastiperRatings(data.data ?? []))
-      .catch(() => setJastiperRatings([]))
-      .finally(() => setRatingsLoading(false));
-  }, [profile?.user_id]);
 
   // Fetch products
   const fetchProducts = useCallback(async (q: string, pg: number) => {
@@ -419,34 +422,28 @@ export default function JastiperProfilePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {jastiperRatings.map((r, i) => {
-                const rating = r.jastiper_rating ?? r.rating ?? 0;
-                const review = r.jastiper_review ?? r.review ?? null;
-                const titipersUsername = r.titipers_username ?? null;
-                const date = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '';
-                return (
-                  <div key={r.rating_jastiper_id ?? i} className="rounded-xl border border-gray-200 bg-white p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                          {(titipersUsername?.[0] ?? 'P').toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{titipersUsername ?? 'Pembeli'}</p>
-                          {titipersUsername && (
-                            <p className="text-xs text-gray-400">@{titipersUsername}</p>
-                          )}
-                        </div>
+              {jastiperRatings.map((r) => (
+                <div key={r.rating_jastiper_id} className="rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                        {(r.titipers_username?.[0] ?? 'P').toUpperCase()}
                       </div>
-                      {date && <p className="text-xs text-gray-400">{date}</p>}
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{r.titipers_username ?? 'Pembeli'}</p>
+                        {r.titipers_username && (
+                          <p className="text-xs text-gray-400">@{r.titipers_username}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mb-1 ml-9">
-                      <RatingStars rating={rating} />
-                    </div>
-                    {review && <p className="text-sm text-gray-600 mt-1 ml-9">{review}</p>}
+                    {r.created_at && <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('id-ID')}</p>}
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-2 mb-1 ml-9">
+                    <RatingStars rating={r.jastiper_rating} />
+                  </div>
+                  {r.jastiper_review && <p className="text-sm text-gray-600 mt-1 ml-9">{r.jastiper_review}</p>}
+                </div>
+              ))}
             </div>
           )}
         </div>

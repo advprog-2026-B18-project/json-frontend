@@ -503,6 +503,52 @@ export async function getProductRating(
 }
 
 // ---------------------------------------------------------------------------
+// getJastiperRatings
+// GET /jastipers/:jastiper_id/ratings
+// Public — no token required
+// Returns ratings list with pagination and average_rating
+// ---------------------------------------------------------------------------
+
+export type JastiperRatingItem = {
+  rating_jastiper_id: string;
+  order_id: string;
+  titipers_id: string;
+  titipers_username?: string | null;
+  jastiper_rating: number;
+  jastiper_review: string | null;
+  created_at: string;
+};
+
+export type JastiperRatingsListResponse = {
+  ratings: JastiperRatingItem[];
+  page: number;
+  limit: number;
+  total: number;
+  average_rating: number;
+};
+
+export type JastiperRatingsParams = {
+  page?: number;
+  limit?: number;
+};
+
+export async function getJastiperRatings(
+  jastiperId: string,
+  params?: JastiperRatingsParams
+): Promise<JastiperRatingsListResponse> {
+  const query = new URLSearchParams();
+  if (params) {
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+  }
+  const qs = query.toString();
+  return orderRequest<JastiperRatingsListResponse>(
+    `/jastipers/${encodeURIComponent(jastiperId)}/ratings${qs ? `?${qs}` : ''}`,
+    { method: 'GET' }
+  );
+}
+
+// ---------------------------------------------------------------------------
 // adminGetOrders
 // GET /admin/orders
 // Protected — ADMIN role only
@@ -539,6 +585,31 @@ export async function adminGetOrders(
       method: 'GET',
       token,
     }
+  );
+  return response.data;
+}
+
+// ---------------------------------------------------------------------------
+// adminGetOrder
+// GET /admin/orders/:order_id
+// Protected — ADMIN role only
+// ---------------------------------------------------------------------------
+
+/**
+ * Get a single order by ID (admin view).
+ *
+ * @param token - JWT access token
+ * @param orderId - Order UUID
+ * @returns The full Order object
+ * @throws ApiError if order not found or user is not an admin
+ */
+export async function adminGetOrder(
+  token: string,
+  orderId: string
+): Promise<Order> {
+  const response = await orderRequest<GetOrderResponse>(
+    `/admin/orders/${encodeURIComponent(orderId)}`,
+    { method: 'GET', token }
   );
   return response.data;
 }

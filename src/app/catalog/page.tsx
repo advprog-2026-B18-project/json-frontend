@@ -6,6 +6,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { searchProducts, getCategories } from '@/services/inventory.service';
 import type { ProductResponse, CategoryResponse } from '@/services/inventory.service';
+import { Navbar } from '@/components/Navbar';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -129,6 +131,7 @@ function ProductCardSkeleton() {
 function CatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { accessToken } = useAuth();
 
   // Read initial values from URL
   const [q, setQ] = useState(searchParams.get('q') ?? '');
@@ -258,16 +261,7 @@ function CatalogContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Minimal header */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-white/80 hover:text-white">Masuk</Link>
-            <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100">Daftar</Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold text-gray-900">Katalog Produk</h1>
