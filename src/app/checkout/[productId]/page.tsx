@@ -176,7 +176,17 @@ export default function CheckoutPage() {
       getWallet(accessToken),
     ])
       .then(([prod, wallet]) => {
-        setProduct(prod);
+        // Normalize snake_case → camelCase for product fields
+        const p = prod as unknown as Record<string, unknown>;
+        const normalized = {
+          ...prod,
+          productId: p.productId ?? p.product_id,
+          serviceFee: p.serviceFee ?? p.service_fee ?? 0,
+          originCountry: p.originCountry ?? p.origin_country ?? '',
+          purchaseDate: p.purchaseDate ?? p.purchase_date ?? '',
+          weightGram: p.weightGram ?? p.weight_gram ?? 0,
+        } as ProductResponse;
+        setProduct(normalized);
         setWalletBalance(wallet.balance);
       })
       .catch((err) => {
@@ -212,6 +222,7 @@ export default function CheckoutPage() {
     const s = shipping;
     if (!s.recipient_name.trim()) return 'Nama penerima wajib diisi.';
     if (!s.phone_number.trim()) return 'Nomor telepon wajib diisi.';
+    if (!/^\d{8,15}$/.test(s.phone_number.trim())) return 'Nomor telepon harus berupa 8–15 digit angka.';
     if (!s.street.trim()) return 'Alamat jalan wajib diisi.';
     if (!s.kelurahan.trim()) return 'Kelurahan wajib diisi.';
     if (!s.kecamatan.trim()) return 'Kecamatan wajib diisi.';
@@ -240,7 +251,7 @@ export default function CheckoutPage() {
     setSubmitting(true);
     try {
       const order = await createOrder(accessToken, {
-        product_id: product.productId,
+        product_id: productId,
         quantity,
         shipping_address: {
           recipient_name: shipping.recipient_name.trim(),

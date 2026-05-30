@@ -227,7 +227,7 @@ export default function ProfilePage() {
         profilePictureUrl: updated.profile_picture_url ?? '',
       };
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
       if (isApiError(err)) {
         setSaveError(err.message || 'Gagal menyimpan profil.');

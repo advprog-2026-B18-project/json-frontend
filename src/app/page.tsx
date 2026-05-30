@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { Navbar } from '@/components/Navbar';
 import { searchProducts, getCategories } from '@/services/inventory.service';
 import type { ProductResponse, CategoryResponse, ProductJastiper } from '@/services/inventory.service';
 
@@ -21,7 +22,8 @@ function formatRupiah(amount: number) {
 // ---------------------------------------------------------------------------
 // RatingStars
 // ---------------------------------------------------------------------------
-function RatingStars({ rating = 0 }: { rating?: number }) {
+// Dari stash: terima undefined | null; dari remote: default param = 0 → gabung keduanya
+function RatingStars({ rating = 0 }: { rating?: number | null }) {
   const safeRating = rating ?? 0;
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -45,9 +47,15 @@ function RatingStars({ rating = 0 }: { rating?: number }) {
 // ---------------------------------------------------------------------------
 function ProductCard({ product }: { product: ProductResponse }) {
   const p = product as any;
-  const productId = p.productId || p.product_id;
+  const productId = p.productId ?? p.product_id;
+  const name = p.name;
+  // Dari stash: price fallback ke p.harga dan ?? 0
+  const price = p.price ?? p.harga ?? 0;
+  const images: string[] = p.images ?? [];
   const avgRating = p.stats?.avgRating ?? p.stats?.avg_rating ?? 0;
-  const images = p.images ?? [];
+
+  // Dari stash: null-guard
+  if (!productId) return null;
 
   return (
     <Link
@@ -59,7 +67,7 @@ function ProductCard({ product }: { product: ProductResponse }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={images[0]}
-            alt={p.name}
+            alt={name}
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
@@ -71,8 +79,8 @@ function ProductCard({ product }: { product: ProductResponse }) {
         )}
       </div>
       <div className="p-3">
-        <p className="text-xs font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
-        <p className="text-sm font-bold text-(--color-primary-dark)">{formatRupiah(p.price)}</p>
+        <p className="text-xs font-medium text-gray-800 line-clamp-2 mb-1">{name}</p>
+        <p className="text-sm font-bold text-(--color-primary-dark)">{formatRupiah(price)}</p>
         {avgRating > 0 && (
           <div className="mt-1">
             <RatingStars rating={avgRating} />
@@ -103,11 +111,11 @@ function ProductCardSkeleton() {
 // JastiperCard
 // ---------------------------------------------------------------------------
 function JastiperCard({ jastiper }: { jastiper: ProductJastiper }) {
-  const js = jastiper as any;
-  const username = js.username;
-  const avgRating = js.avgRating ?? js.avg_rating ?? 0;
-  const totalOrders = js.totalOrders ?? js.total_orders ?? 0;
-  const profilePictureUrl = js.profilePictureUrl || js.profile_picture_url;
+  const j = jastiper as any;
+  const username = j.username;
+  const profilePictureUrl = j.profilePictureUrl ?? j.profile_picture_url ?? null;
+  const avgRating = j.avgRating ?? j.avg_rating ?? 0;
+  const totalOrders = j.totalOrders ?? j.total_orders ?? 0;
 
   if (!username) return null;
   return (
@@ -145,18 +153,18 @@ export default function LandingPage() {
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
+  // Dari remote: tambahan null-check `if (!js) continue`
   const topJastipers = (() => {
     const seen = new Set<string>();
     const result: ProductJastiper[] = [];
     for (const p of products) {
-      const js = p.jastiper as any;
-      if (!js) continue;
-      const uId = js.userId || js.user_id;
-      const uname = js.username;
-      
+      const j = p.jastiper as any;
+      if (!j) continue;
+      const uId = j.userId ?? j.user_id;
+      const uname = j.username;
       if (uname && uId && !seen.has(uId)) {
         seen.add(uId);
-        result.push(js);
+        result.push(j);
         if (result.length >= 6) break;
       }
     }
@@ -197,36 +205,11 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Navbar                                                             */}
-      {/* ------------------------------------------------------------------ */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white tracking-tight">
-            JSON
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white transition">
-              Katalog
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition"
-            >
-              Masuk
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100 transition"
-            >
-              Daftar
-            </Link>
-          </nav>
-        </div>
-      </header>
+      {/* Dari stash: pakai <Navbar /> component */}
+      <Navbar />
 
       {/* ------------------------------------------------------------------ */}
-      {/* 1. Hero Section                                                    */}
+      {/* 1. Hero Section                                                      */}
       {/* ------------------------------------------------------------------ */}
       <section className="bg-linear-to-br from-(--color-primary-dark) to-(--color-primary) px-4 py-20 text-center text-white">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -254,7 +237,7 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 2. Featured Products                                               */}
+      {/* 2. Featured Products                                                 */}
       {/* ------------------------------------------------------------------ */}
       <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="mb-5 flex items-center justify-between">
@@ -274,8 +257,9 @@ export default function LandingPage() {
               ? (
                 <p className="text-sm text-gray-500 py-8">Belum ada produk tersedia.</p>
               )
+              // Dari remote: key pakai variabel lokal `const id = ...`
               : products.map((p) => {
-                  const id = p.productId || (p as any).product_id;
+                  const id = (p as any).productId ?? (p as any).product_id;
                   return <ProductCard key={id} product={p} />;
                 })
             }
@@ -284,7 +268,7 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. How It Works                                                    */}
+      {/* 3. How It Works                                                      */}
       {/* ------------------------------------------------------------------ */}
       <section className="bg-white px-4 py-14">
         <div className="mx-auto max-w-4xl">
@@ -338,11 +322,11 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 4. Top Jastipers                                                   */}
+      {/* 4. Top Jastipers                                                     */}
       {/* ------------------------------------------------------------------ */}
       {(productsLoading || topJastipers.length > 0) && (
         <section className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="mb-5 text-xl font-bold text-gray-900">Jastiper Terpopuler</h2>
+          <h2 className="mb-5 text-xl font-bold text-gray-900">Jastiper Terunggul</h2>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {productsLoading
               ? Array.from({ length: 6 }).map((_, i) => (
@@ -352,8 +336,9 @@ export default function LandingPage() {
                     <div className="h-3 w-16 rounded bg-gray-100 mx-auto" />
                   </div>
                 ))
+              // Dari remote: key pakai variabel lokal `const id = ...`
               : topJastipers.map((j) => {
-                  const id = j.userId || (j as any).user_id;
+                  const id = (j as any).userId ?? (j as any).user_id;
                   return <JastiperCard key={id} jastiper={j} />;
                 })
             }
@@ -362,7 +347,7 @@ export default function LandingPage() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 5. Category Quick Links                                            */}
+      {/* 5. Category Quick Links                                              */}
       {/* ------------------------------------------------------------------ */}
       <section className="bg-white px-4 py-12">
         <div className="mx-auto max-w-6xl">
@@ -390,7 +375,7 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 6. Footer                                                          */}
+      {/* 6. Footer                                                            */}
       {/* ------------------------------------------------------------------ */}
       <footer className="bg-(--color-primary-dark) px-4 py-10 text-white">
         <div className="mx-auto max-w-6xl">

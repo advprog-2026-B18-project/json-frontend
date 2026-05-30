@@ -5,13 +5,16 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
+  getMyProfile,
   getMyKycStatus,
   submitKyc,
   isApiError,
   type KycStatus,
   type KycStatusResponse,
   type KycSocialMediaLink,
+  type ProfileResponse,
 } from '@/services/auth.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // KYC status banner
@@ -91,7 +94,7 @@ export default function KycPage() {
   }, [authLoading, accessToken, router]);
 
   // ---------------------------------------------------------------------------
-  // Fetch current KYC status
+  // Fetch current KYC status and profile
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (authLoading || !accessToken) return;
@@ -99,23 +102,31 @@ export default function KycPage() {
     let cancelled = false;
     setLoadingStatus(true);
 
-    getMyKycStatus(accessToken)
-      .then((data) => {
-        if (!cancelled) setKycStatus(data);
-      })
-      .catch((err) => {
-        // 404 = no KYC submitted yet — that's fine, show the form
-        if (isApiError(err) && err.status === 404) {
-          if (!cancelled) setKycStatus(null);
+    Promise.all([
+      getMyProfile(accessToken),
+      getMyKycStatus(accessToken).catch((err) => {
+        if (isApiError(err) && err.status === 404) return null;
+        throw err;
+      }),
+    ])
+      .then(([profile, kyc]) => {
+        if (cancelled) return;
+        setKycStatus(kyc);
+
+        // Redirect if profile is incomplete (username or full_name missing)
+        if (!profile.username || !profile.full_name) {
+          router.push('/profile');
         }
-        // Other errors: silently ignore, show form anyway
+      })
+      .catch(() => {
+        // Silently ignore — show form anyway
       })
       .finally(() => {
         if (!cancelled) setLoadingStatus(false);
       });
 
     return () => { cancelled = true; };
-  }, [authLoading, accessToken]);
+  }, [authLoading, accessToken, router]);
 
   // ---------------------------------------------------------------------------
   // Social links helpers
@@ -207,15 +218,18 @@ export default function KycPage() {
   // ---------------------------------------------------------------------------
   if (authLoading || loadingStatus) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm animate-pulse space-y-4">
-          <div className="h-6 w-48 rounded bg-gray-200" />
-          <div className="h-10 rounded bg-gray-100" />
-          <div className="h-10 rounded bg-gray-100" />
-          <div className="h-10 rounded bg-gray-100" />
-          <div className="h-10 rounded bg-gray-100" />
-        </div>
-      </main>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm animate-pulse space-y-4">
+            <div className="h-6 w-48 rounded bg-gray-200" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+            <div className="h-10 rounded bg-gray-100" />
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -225,14 +239,17 @@ export default function KycPage() {
   // If APPROVED — show banner only, no form
   if (kycStatus?.status === 'APPROVED') {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-12">
-        <div className="mx-auto w-full max-w-lg">
-          <div className="rounded-2xl bg-white p-8 shadow-sm space-y-4">
-            <h1 className="text-xl font-semibold text-gray-800">Verifikasi Identitas (KYC)</h1>
-            <KycStatusBanner status="APPROVED" />
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="px-4 py-12">
+          <div className="mx-auto w-full max-w-lg">
+            <div className="rounded-2xl bg-white p-8 shadow-sm space-y-4">
+              <h1 className="text-xl font-semibold text-gray-800">Verifikasi Identitas (KYC)</h1>
+              <KycStatusBanner status="APPROVED" />
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -242,12 +259,14 @@ export default function KycPage() {
   const showForm = !isPending; // show form when: no KYC yet, rejected, or just submitted
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12">
-      <div className="mx-auto w-full max-w-lg">
-        <div className="rounded-2xl bg-white p-8 shadow-sm">
-          <h1 className="mb-5 text-xl font-semibold text-gray-800">
-            Verifikasi Identitas (KYC)
-          </h1>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="px-4 py-12">
+        <div className="mx-auto w-full max-w-lg">
+          <div className="rounded-2xl bg-white p-8 shadow-sm">
+            <h1 className="mb-5 text-xl font-semibold text-gray-800">
+              Verifikasi Identitas (KYC)
+            </h1>
 
           {/* Status banner */}
           {(kycStatus || submitSuccess) && (
@@ -446,5 +465,6 @@ export default function KycPage() {
         </div>
       </div>
     </main>
+    </div>
   );
 }

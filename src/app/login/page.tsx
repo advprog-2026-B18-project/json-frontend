@@ -8,6 +8,17 @@ import { login, isApiError, getMyProfile } from '@/services/auth.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function isRouteAllowedForRole(route: string, role?: string): boolean {
+  if (!role) return true;
+  if (route.startsWith('/admin') && role !== 'ADMIN') return false;
+  if (route.startsWith('/jastiper') && role !== 'JASTIPER') return false;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Inner component — uses useSearchParams (requires Suspense boundary)
 // ---------------------------------------------------------------------------
 function LoginForm() {
