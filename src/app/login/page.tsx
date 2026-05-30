@@ -30,9 +30,13 @@ function LoginForm() {
     try {
       const data = await login({ email, password });
 
-      // Store access token + user info in context.
       setAccessToken(data.refresh_token, data.user);
-      document.cookie = `refresh_token=${data.refresh_token}; path=/; secure; max-age=${data.expires_in}; samesite=lax`;
+
+      const redirectedFrom = searchParams.get('redirectedFrom');
+      if (redirectedFrom) {
+        router.push(redirectedFrom);
+        return;
+      }
 
       const role = data.user?.role?.toUpperCase();
       if (role === 'ADMIN') {
@@ -40,7 +44,7 @@ function LoginForm() {
       } else if (role === 'JASTIPER') {
         router.push('/jastiper/catalog');
       } else {
-        router.push('/');
+        router.push('/catalog'); // FIX: Diarahkan ke katalog spesifik untuk TITIPERS
       }
     } catch (err) {
       if (isApiError(err)) {
