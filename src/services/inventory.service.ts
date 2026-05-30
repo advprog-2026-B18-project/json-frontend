@@ -155,11 +155,30 @@ export async function searchProducts(
     params?: SearchProductsParams
 ): Promise<PaginatedProductResponse> {
   const query = new URLSearchParams();
+
   if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined) query.set(k, String(v));
+    if (params.q) query.set('q', params.q);
+    if (params.jastiperId) query.set('jastiper_id', params.jastiperId);
+
+    if (params.minPrice !== undefined) query.set('min_price', String(params.minPrice));
+    if (params.maxPrice !== undefined) query.set('max_price', String(params.maxPrice));
+    if (params.categoryId !== undefined) query.set('category_id', String(params.categoryId));
+
+    if (params.origin_country) query.set('origin_country', params.origin_country);
+    if (params.purchase_date_from) query.set('purchase_date_from', params.purchase_date_from);
+    if (params.purchase_date_to) query.set('purchase_date_to', params.purchase_date_to);
+
+    if (params.sortBy) query.set('sortBy', params.sortBy);
+    if (params.order) query.set('order', params.order);
+
+    if (params.page !== undefined) {
+      query.set('page', String(params.page - 1));
+    }
+    if (params.limit !== undefined) {
+      query.set('size', String(params.limit));
     }
   }
+
   const qs = query.toString();
   return inventoryRequest<PaginatedProductResponse>(`/products${qs ? `?${qs}` : ''}`, {
     method: 'GET',
