@@ -59,9 +59,16 @@ export function Navbar() {
     router.push('/login');
   }, [clearAuth, router]);
 
+
+  const getCatalogLink = () => {
+    if (user?.role === 'JASTIPER') return '/jastiper/catalog';
+    if (user?.role === 'ADMIN') return '/admin/catalog';
+    return '/catalog';
+  };
+
   if (authLoading) {
     return (
-        <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
+        <header className="sticky top-0 z-40 bg-primary-dark shadow-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
             <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
             <div className="h-6 w-20 rounded bg-white/20 animate-pulse" />
@@ -71,16 +78,16 @@ export function Navbar() {
   }
 
   return (
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
+      <header className="sticky top-0 z-40 bg-primary-dark shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           {/* Logo */}
-          <Link href={accessToken ? '/catalog' : '/'} className="text-xl font-extrabold text-white">
+          <Link href={accessToken ? (user?.role === 'JASTIPER' ? '/jastiper/dashboard' : user?.role === 'ADMIN' ? '/admin/catalog' : '/dashboard') : '/'} className="text-xl font-extrabold text-white">
             JSON
           </Link>
 
           {/* Nav links — Desktop (md+) */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white transition">
+            <Link href={getCatalogLink()} className="text-sm text-white/80 hover:text-white transition">
               Katalog
             </Link>
             {accessToken && user && (
@@ -105,7 +112,7 @@ export function Navbar() {
                   )}
                   {user.role === 'ADMIN' && (
                       <Link href="/admin/catalog" className="text-sm text-white/80 hover:text-white transition">
-                        Admin Panel {/* FIX: Diubah dari /admin/dashboard (404) ke /admin/catalog sesuai berkas yang tersedia */}
+                        Admin Panel
                       </Link>
                   )}
                 </>
@@ -174,13 +181,13 @@ export function Navbar() {
                   <Link href="/login" className="text-sm text-white/80 hover:text-white transition">
                     Masuk
                   </Link>
-                  <Link href="/register" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100 transition">
+                  <Link href="/register" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-primary-dark hover:bg-gray-100 transition">
                     Daftar
                   </Link>
                 </div>
             )}
 
-            {/* FIX: Mobile Menu Hamburger Button */}
+            {/* Mobile Menu Hamburger Button */}
             <button
                 onClick={() => setShowMobileMenu((prev) => !prev)}
                 className="rounded-lg p-1 text-white md:hidden hover:bg-white/10"
@@ -197,10 +204,10 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* FIX: Mobile Dropdown Menu Container */}
+        {/* Mobile Dropdown Menu Container */}
         {showMobileMenu && (
-            <div className="border-t border-white/10 bg-(--color-primary-dark) px-4 py-3 md:hidden space-y-2">
-              <Link href="/catalog" className="block text-sm text-white/80 py-1" onClick={() => setShowMobileMenu(false)}>
+            <div className="border-t border-white/10 bg-primary-dark px-4 py-3 md:hidden space-y-2">
+              <Link href={getCatalogLink()} className="block text-sm text-white/80 py-1" onClick={() => setShowMobileMenu(false)}>
                 Katalog
               </Link>
               {accessToken && user ? (
@@ -232,7 +239,7 @@ export function Navbar() {
                     <Link href="/login" className="block text-center text-sm text-white py-2 rounded-lg bg-white/5" onClick={() => setShowMobileMenu(false)}>
                       Masuk
                     </Link>
-                    <Link href="/register" className="block text-center text-sm font-semibold text-(--color-primary-dark) bg-white py-2 rounded-lg" onClick={() => setShowMobileMenu(false)}>
+                    <Link href="/register" className="block text-center text-sm font-semibold text-primary-dark bg-white py-2 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                       Daftar
                     </Link>
                   </div>
