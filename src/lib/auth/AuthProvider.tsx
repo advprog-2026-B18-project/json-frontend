@@ -31,7 +31,6 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { getMyProfile } from '@/services/auth.service';
 import type { AccountResponse } from '@/services/auth.service';
 
 // ---------------------------------------------------------------------------
@@ -127,28 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } | null;
 
         if (!cancelled && body?.access_token) {
-          const token = body.access_token;
-          setAccessTokenState(token);
-
-          // Fetch user profile to restore the `user` state after page reload.
-          // The refresh-token endpoint does not return user info,
-          // so we make a separate call to /profile/me.
-          try {
-            const profileData = await getMyProfile(token);
-            if (!cancelled) {
-              setUser({
-                user_id: profileData.user_id,
-                email: profileData.email,
-                role: profileData.role,
-                username: profileData.username,
-                status: profileData.status,
-              });
-            }
-          } catch {
-            // Profile fetch failed — token is considered unusable without
-            // user info, so we clear all auth state.
-            if (!cancelled) clearAuth();
-          }
+          setAccessTokenState(body.access_token);
+          // Note: the refresh-token BFF does not return user info.
+          // User info will be populated on the next login or via getMyProfile.
         }
       } catch {
         // Network error or BFF unavailable — fail silently.
@@ -162,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [clearAuth]);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Context value — memoised to avoid unnecessary re-renders

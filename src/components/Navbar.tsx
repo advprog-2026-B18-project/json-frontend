@@ -133,6 +133,7 @@ export function Navbar() {
                   {user.role === 'JASTIPER' && (
                       <>
                         <Link href="/jastiper/dashboard" className={getLinkClass('/jastiper/dashboard')}>Dashboard</Link>
+                        <Link href="/catalog" className={getLinkClass('/catalog')}>Katalog</Link>
                         <Link href="/jastiper/catalog" className={getLinkClass('/jastiper/catalog')}>Katalog Saya</Link>
                         <Link href="/jastiper/orders" className={getLinkClass('/jastiper/orders')}>Kelola Pesanan</Link>
                         <Link href="/jastiper/wallet" className={getLinkClass('/jastiper/wallet')}>Dompet</Link>
@@ -262,6 +263,7 @@ export function Navbar() {
                     {user.role === 'JASTIPER' && (
                         <>
                           <Link href="/jastiper/dashboard" className={getMobileLinkClass('/jastiper/dashboard')} onClick={() => setShowMobileMenu(false)}>Dashboard</Link>
+                          <Link href="/catalog" className={getMobileLinkClass('/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog</Link>
                           <Link href="/jastiper/catalog" className={getMobileLinkClass('/jastiper/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog Saya</Link>
                           <Link href="/jastiper/orders" className={getMobileLinkClass('/jastiper/orders')} onClick={() => setShowMobileMenu(false)}>Kelola Pesanan</Link>
                           <Link href="/jastiper/wallet" className={getMobileLinkClass('/jastiper/wallet')} onClick={() => setShowMobileMenu(false)}>Dompet</Link>

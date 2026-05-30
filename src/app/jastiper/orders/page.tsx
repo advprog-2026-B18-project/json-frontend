@@ -1,12 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
   getMySales,
-  getMyPurchases,
   markPurchased,
   markShipped,
   cancelOrder,
@@ -32,8 +31,9 @@ const STATUS_TABS: { value: string; label: string }[] = [
   { value: 'CANCELLED', label: 'Dibatalkan' },
 ];
 
-export default function JastiperOrdersPage() {
+function JastiperOrdersContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { accessToken, user, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
 
@@ -41,12 +41,15 @@ export default function JastiperOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const validStatuses = STATUS_TABS.map((t) => t.value);
+  const initialStatus = validStatuses.includes(searchParams.get('status') ?? '')
+    ? searchParams.get('status')!
+    : 'ALL';
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 20;
-  const [viewMode, setViewMode] = useState<'sales' | 'purchases'>('sales');
 
   // Action modals
   const [actionLoading, setActionLoading] = useState(false);
@@ -67,10 +70,8 @@ export default function JastiperOrdersPage() {
     setLoading(true);
     setError('');
     try {
-      const sortParam = { sort_by: 'created_at', order: 'Desc' as const };
-      const result = await (viewMode === 'sales'
-        ? getMySales(accessToken, sortParam)
-        : getMyPurchases(accessToken, sortParam));
+      const params: Record<string, number | string> = { page, limit, sort_by: 'created_at', order: 'Desc' };
+      const result = await getMySales(accessToken, params);
       const allOrders = result.data;
       const filtered = statusFilter === 'ALL'
         ? allOrders
@@ -87,7 +88,7 @@ export default function JastiperOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, statusFilter, page, viewMode]);
+  }, [accessToken, statusFilter, page]);
 
   useEffect(() => {
     if (!authLoading && accessToken) fetchData();
@@ -167,33 +168,7 @@ export default function JastiperOrdersPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {viewMode === 'sales' ? 'Daftar Pesanan Masuk' : 'Daftar Pembelian Saya'}
-        </h1>
-
-        {/* View mode toggle */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => { setViewMode('sales'); setPage(1); }}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              viewMode === 'sales'
-                ? 'bg-(--color-primary) text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
-            }`}
-          >
-            Penjualan
-          </button>
-          <button
-            onClick={() => { setViewMode('purchases'); setPage(1); }}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              viewMode === 'purchases'
-                ? 'bg-(--color-primary) text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
-            }`}
-          >
-            Pembelian
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Daftar Pesanan Masuk</h1>
 
         {/* Status filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filter status pesanan">
@@ -233,19 +208,13 @@ export default function JastiperOrdersPage() {
           </div>
         ) : orders.length === 0 ? (
           <EmptyState
-            title={viewMode === 'sales' ? 'Belum ada pesanan masuk' : 'Belum ada pembelian'}
-            description={
-              statusFilter !== 'ALL'
-                ? 'Tidak ada pesanan dengan status ini'
-                : viewMode === 'sales'
-                  ? 'Belum ada pembeli yang memesan produk Anda'
-                  : 'Anda belum melakukan pembelian apapun'
-            }
+            title="Belum ada pesanan masuk"
+            description={statusFilter !== 'ALL' ? 'Tidak ada pesanan dengan status ini' : 'Belum ada pembeli yang memesan produk Anda'}
           />
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <OrderCard key={order.order_id} order={order} viewAs={viewMode === 'sales' ? 'JASTIPER' : 'TITIPERS'} onAction={viewMode === 'sales' ? handleOrderAction : undefined} />
+              <OrderCard key={order.order_id} order={order} viewAs="JASTIPER" onAction={handleOrderAction} />
             ))}
           </div>
         )}
@@ -329,5 +298,17 @@ export default function JastiperOrdersPage() {
         </div>
       </ConfirmModal>
     </div>
+  );
+}
+
+export default function JastiperOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-(--color-primary) border-t-transparent" />
+      </div>
+    }>
+      <JastiperOrdersContent />
+    </Suspense>
   );
 }
