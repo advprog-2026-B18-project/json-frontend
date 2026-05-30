@@ -67,9 +67,10 @@ export default function JastiperOrdersPage() {
     setLoading(true);
     setError('');
     try {
+      const sortParam = { sort_by: 'created_at', order: 'Desc' as const };
       const result = await (viewMode === 'sales'
-        ? getMySales(accessToken)
-        : getMyPurchases(accessToken));
+        ? getMySales(accessToken, sortParam)
+        : getMyPurchases(accessToken, sortParam));
       const allOrders = result.data;
       const filtered = statusFilter === 'ALL'
         ? allOrders

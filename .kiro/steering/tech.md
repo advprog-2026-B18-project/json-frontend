@@ -34,10 +34,10 @@
 ## Environment Variables
 | Variable | Used for |
 |---|---|
-| `NEXT_PUBLIC_API_AUTH` | Auth service base URL |
-| `NEXT_PUBLIC_API_PAYMENT` | Payment service base URL |
-| `NEXT_PUBLIC_API_INVENTORY` | Inventory service base URL |
-| `NEXT_PUBLIC_API_ORDERS` | Orders service base URL |
+| `NEXT_PUBLIC_AUTH_SERVICE_URL` | Auth service base URL (`http://localhost:8082`) |
+| `NEXT_PUBLIC_PAYMENT_SERVICE_URL` | Payment service base URL (`http://localhost:8081`) |
+| `NEXT_PUBLIC_INVENTORY_SERVICE_URL` | Inventory service base URL (`http://localhost:8083`) |
+| `NEXT_PUBLIC_ORDER_SERVICE_URL` | Orders service base URL (`http://localhost:8084`) |
 | `JWT_SECRET` | Server-side JWT verification (not public) |
 
 ## Common Commands
@@ -48,4 +48,9 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 ```
 
-> Note: The backend is a separate service expected at the URLs above. The frontend proxies auth operations through Next.js BFF route handlers (`/api/auth/*`).
+> Note: The backend is a separate service expected at the URLs above.
+> 
+> **Proxy architecture:**
+> - **Client-side** requests use Next.js rewrites (`/api/auth/*`, `/api/inventory/*`, etc.) defined in `next.config.ts`, proxying to the backend services. This avoids CORS issues from the browser.
+> - **Server-side** (SSR) requests go directly to the backend URLs from env vars.
+> - Auth operations (login/logout/refresh) use Next.js BFF route handlers (`/api/auth/*`) to manage the HttpOnly refresh_token cookie server-side.
