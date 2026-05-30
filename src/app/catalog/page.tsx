@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
+import { Navbar } from '@/components/Navbar';
 import { searchProducts, getCategories } from '@/services/inventory.service';
 import type { ProductResponse, CategoryResponse } from '@/services/inventory.service';
-import { Navbar } from '@/components/Navbar';
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -36,10 +36,17 @@ function RatingStars({ rating }: { rating: number }) {
 
 function ProductCard({ product }: { product: ProductResponse }) {
   const p = product as any;
-  const productId = p.productId || p.product_id;
+  const productId = p.productId ?? p.product_id;
+  const name = p.name;
+  const price = p.price ?? p.harga;
   const serviceFee = p.serviceFee ?? p.service_fee ?? 0;
+  const status = p.status;
+  const images: string[] = p.images ?? [];
   const avgRating = p.stats?.avgRating ?? p.stats?.avg_rating ?? 0;
   const jastiperUsername = p.jastiper?.username ?? p.jastiper?.user_id;
+
+  // Dari doc 1: null-check guard
+  if (!productId) return null;
 
   return (
       <Link
@@ -135,6 +142,7 @@ function CatalogContent() {
 
   const LIMIT = 20;
 
+
   useEffect(() => {
     getCategories().then(setCategories).catch(() => {});
   }, []);
@@ -194,6 +202,7 @@ function CatalogContent() {
 
     return () => { cancelled = true; };
   }, [searchParams]);
+
 
   function applyFilters() {
     const sp = new URLSearchParams();

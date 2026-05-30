@@ -15,6 +15,8 @@ import {
   type ProductResponse,
   type PaginatedProducts,
 } from '@/services/inventory.service';
+import { getJastiperRatings } from '@/services/order.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,36 +64,51 @@ function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'm
 }
 
 function ProductCard({ product }: { product: ProductResponse }) {
+  const p = product as any;
+  const productId = p.productId ?? p.product_id;
+  const name = p.name;
+  const price = p.price ?? p.harga;
+  const serviceFee = p.serviceFee ?? p.service_fee ?? 0;
+  const status = p.status;
+  const images: string[] = p.images ?? [];
+  const stats = {
+    avgRating: p.stats?.avgRating ?? p.stats?.avg_rating ?? 0,
+  };
+
+  if (!productId) return null;
   return (
     <Link
-      href={`/catalog/${product.productId}`}
+      href={`/catalog/${productId}`}
       className="group rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition overflow-hidden"
     >
       <div className="aspect-square bg-gray-100 overflow-hidden">
-        {product.images[0] ? (
+        {images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={product.images[0]}
-            alt={product.name}
+            src={images[0]}
+            alt={name}
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-gray-300">
-            <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
         )}
       </div>
       <div className="p-3">
-        <p className="text-sm font-medium text-gray-800 line-clamp-2">{product.name}</p>
-        <p className="mt-1 text-sm font-semibold text-(--color-primary-dark)">{formatRupiah(product.price)}</p>
-        {product.stats.avgRating > 0 && (
-          <div className="mt-1">
-            <RatingStars rating={product.stats.avgRating} />
+        <p className="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{name}</p>
+        <p className="text-sm font-bold text-(--color-primary-dark)">{formatRupiah(price)}</p>
+        {serviceFee > 0 && (
+          <p className="text-xs text-gray-400">+ {formatRupiah(serviceFee)} jasa</p>
+        )}
+        {stats.avgRating > 0 && (
+          <div className="mt-1.5">
+            <RatingStars rating={stats.avgRating} />
           </div>
         )}
-        {product.status === 'OUT_OF_STOCK' && (
+        {status === 'OUT_OF_STOCK' && (
           <span className="mt-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
             Stok Habis
           </span>
@@ -121,6 +138,9 @@ export default function JastiperProfilePage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
 
+  const [jastiperRatings, setJastiperRatings] = useState<any[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+
   // ---------------------------------------------------------------------------
   // Fetch profile
   // ---------------------------------------------------------------------------
@@ -144,6 +164,18 @@ export default function JastiperProfilePage() {
 
     return () => { cancelled = true; };
   }, [username]);
+
+  // ---------------------------------------------------------------------------
+  // Fetch jastiper ratings
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    setRatingsLoading(true);
+    getJastiperRatings(profile.user_id, { page: 1, limit: 10 })
+      .then((data) => setJastiperRatings(data.data ?? []))
+      .catch(() => setJastiperRatings([]))
+      .finally(() => setRatingsLoading(false));
+  }, [profile?.user_id]);
 
   // ---------------------------------------------------------------------------
   // Fetch products
@@ -188,8 +220,9 @@ export default function JastiperProfilePage() {
   // ---------------------------------------------------------------------------
   if (profileLoading) {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-12">
-        <div className="mx-auto max-w-4xl animate-pulse space-y-6">
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="mx-auto max-w-4xl px-4 py-12 animate-pulse space-y-6">
           <div className="flex gap-6 items-center">
             <div className="h-24 w-24 rounded-full bg-gray-200" />
             <div className="space-y-2 flex-1">
@@ -203,29 +236,33 @@ export default function JastiperProfilePage() {
               <div key={i} className="aspect-square rounded-xl bg-gray-200" />
             ))}
           </div>
-        </div>
-      </main>
-    );
+        </main>
+      </div>
+  );
   }
 
   if (profileError === 'not_found') {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-800 mb-2">Profil tidak ditemukan</p>
-          <p className="text-gray-500 mb-6">Pengguna dengan username &quot;{username}&quot; tidak ada.</p>
-          <Link href="/catalog" className="rounded-lg bg-(--color-primary) px-4 py-2 text-sm text-white hover:bg-(--color-primary-dark)">
-            Kembali ke Katalog
-          </Link>
-        </div>
-      </main>
-    );
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="flex items-center justify-center px-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-800 mb-2">Profil tidak ditemukan</p>
+            <p className="text-gray-500 mb-6">Pengguna dengan username &quot;{username}&quot; tidak ada.</p>
+            <Link href="/catalog" className="rounded-lg bg-(--color-primary) px-4 py-2 text-sm text-white hover:bg-(--color-primary-dark)">
+              Kembali ke Katalog
+            </Link>
+          </div>
+        </main>
+      </div>
+  );
   }
 
   if (!profile) return null;
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <Navbar />
       {/* Profile header */}
       <div className="bg-white border-b border-gray-100">
         <div className="mx-auto max-w-4xl px-4 py-8">
@@ -280,7 +317,7 @@ export default function JastiperProfilePage() {
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-bold text-gray-800">
-                      {(profile.stats.success_rate * 100).toFixed(0)}%
+                      {profile.stats.success_rate.toFixed(0)}%
                     </p>
                     <p className="text-xs text-gray-500">Sukses</p>
                   </div>
@@ -358,7 +395,7 @@ export default function JastiperProfilePage() {
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {products.map((product) => (
-                <ProductCard key={product.productId} product={product} />
+                <ProductCard key={(product as any).productId ?? (product as any).product_id ?? Math.random()} product={product} />
               ))}
             </div>
 
@@ -385,8 +422,58 @@ export default function JastiperProfilePage() {
               </div>
             )}
           </>
-        )}
-      </div>
-    </main>
+            )}
+        </div>
+
+        {/* Jastiper Ratings */}
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          <h2 className="mb-3 text-lg font-bold text-gray-900">Ulasan tentang Jastiper</h2>
+          {ratingsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="h-4 w-32 rounded bg-gray-200 mb-2" />
+                  <div className="h-3 w-full rounded bg-gray-100" />
+                </div>
+              ))}
+            </div>
+          ) : jastiperRatings.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+              <p className="text-sm text-gray-500">Belum ada ulasan untuk jastiper ini.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {jastiperRatings.map((r, i) => {
+                const rating = r.jastiper_rating ?? r.rating ?? 0;
+                const review = r.jastiper_review ?? r.review ?? null;
+                const titipersUsername = r.titipers_username ?? null;
+                const date = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID') : '';
+                return (
+                  <div key={r.rating_jastiper_id ?? i} className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-(--color-primary)/10 flex items-center justify-center text-xs font-bold text-(--color-primary) shrink-0">
+                          {(titipersUsername?.[0] ?? 'P').toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{titipersUsername ?? 'Pembeli'}</p>
+                          {titipersUsername && (
+                            <p className="text-xs text-gray-400">@{titipersUsername}</p>
+                          )}
+                        </div>
+                      </div>
+                      {date && <p className="text-xs text-gray-400">{date}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 mb-1 ml-9">
+                      <RatingStars rating={rating} />
+                    </div>
+                    {review && <p className="text-sm text-gray-600 mt-1 ml-9">{review}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        </main>
   );
 }

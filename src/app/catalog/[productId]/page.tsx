@@ -15,10 +15,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { getProduct, isApiError } from '@/services/inventory.service';
-import type { ProductResponse } from '@/services/inventory.service';
-import { useAuth } from '@/lib/auth/AuthProvider';
 import { Navbar } from '@/components/Navbar';
+import { getProduct } from '@/services/inventory.service';
+import type { ProductResponse } from '@/services/inventory.service';
+import { getProductRatings } from '@/services/order.service';
+import type { ProductRating } from '@/lib/api/orders';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,11 +34,54 @@ function formatRupiah(amount: number) {
   }).format(amount);
 }
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-';
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return '—';
   const [year, month, day] = dateStr.split('-');
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
   return `${day} ${months[Number(month) - 1]} ${year}`;
+}
+
+function normalizeProduct(p: Record<string, unknown>): ProductResponse {
+  // Map snake_case backend responses to camelCase ProductResponse
+  const fallback = (camel: string, snake: string) =>
+    (p[camel] ?? p[snake]) as unknown;
+  return {
+    productId: fallback('productId', 'product_id') as string,
+    name: fallback('name', 'name') as string,
+    description: fallback('description', 'description') as string,
+    price: fallback('price', 'price') as number,
+    stock: fallback('stock', 'stock') as number,
+    status: fallback('status', 'status') as ProductResponse['status'],
+    originCountry: fallback('originCountry', 'origin_country') as string,
+    purchaseDate: fallback('purchaseDate', 'purchase_date') as string,
+    weightGram: fallback('weightGram', 'weight_gram') as number,
+    serviceFee: fallback('serviceFee', 'service_fee') as number,
+    images: fallback('images', 'images') as string[],
+    tags: fallback('tags', 'tags') as string[],
+    mode: (p.mode ?? p.mode ?? 'LIVE') as ProductResponse['mode'],
+    flashSaleStart: (p.flashSaleStart ?? p.flash_sale_start ?? null) as string | null,
+    flashSaleEnd: (p.flashSaleEnd ?? p.flash_sale_end ?? null) as string | null,
+    category: fallback('category', 'category') as ProductResponse['category'],
+    jastiper: (() => {
+      const j = (fallback('jastiper', 'jastiper') ?? {}) as Record<string, unknown>;
+      return {
+        userId: (j.userId ?? j.user_id) as string,
+        username: (j.username ?? j.username ?? null) as string | null,
+        fullName: (j.fullName ?? j.full_name ?? null) as string | null,
+        profilePictureUrl: (j.profilePictureUrl ?? j.profile_picture_url ?? null) as string | null,
+        avgRating: (j.avgRating ?? j.avg_rating ?? 0) as number,
+        totalOrders: (j.totalOrders ?? j.total_orders ?? 0) as number,
+      };
+    })(),
+    stats: (() => {
+      const s = (fallback('stats', 'stats') ?? {}) as Record<string, unknown>;
+      return {
+        totalOrders: (s.totalOrders ?? s.total_orders ?? 0) as number,
+        totalReviews: (s.totalReviews ?? s.total_reviews ?? 0) as number,
+        avgRating: (s.avgRating ?? s.avg_rating ?? 0) as number,
+      };
+    })(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +217,10 @@ export default function ProductDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
 
+  const [productRatings, setProductRatings] = useState<(ProductRating & { titipers_username?: string })[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [ratingsAvg, setRatingsAvg] = useState(0);
+
   // Fetch product
   useEffect(() => {
     if (!rawProductId || rawProductId === 'undefined') return;
@@ -181,6 +230,17 @@ export default function ProductDetailPage() {
     getProduct(rawProductId)
         .then((data) => {
           setProduct(data);
+          // Fetch product ratings
+          setRatingsLoading(true);
+          getProductRatings(rawProductId, { page: 1, limit: 10 })
+              .then((res) => {
+                setProductRatings(res.ratings ?? []);
+                setRatingsAvg(res.average_rating ?? 0);
+              })
+              .catch(() => {
+                setProductRatings([]);
+              })
+              .finally(() => setRatingsLoading(false));
         })
         .catch(() => {
           setNotFound(true);
@@ -314,6 +374,7 @@ export default function ProductDetailPage() {
 
   const jastiperUsername = p.jastiper?.username ?? p.jastiper?.user_id ?? 'Jastiper';
   const jastiperFullName = p.jastiper?.fullName || p.jastiper?.full_name;
+  const jastiperProfilePicture = p.jastiper?.profilePictureUrl ?? p.jastiper?.profile_picture_url ?? null;
   const jastiperAvgRating = p.jastiper?.avgRating ?? p.jastiper?.avg_rating ?? 0;
   const jastiperTotalOrders = p.jastiper?.totalOrders ?? p.jastiper?.total_orders ?? 0;
 
@@ -431,20 +492,29 @@ export default function ProductDetailPage() {
 
               <div className="rounded-xl border border-gray-200 bg-white p-4">
                 <p className="mb-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Dijual oleh</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {jastiperUsername?.[0]?.toUpperCase() ?? 'J'}
-                  </div>
+                <Link
+                    href={`/jastiper/${jastiperUsername}`}
+                    className="flex items-center gap-3 group"
+                >
+                  {jastiperProfilePicture ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                          src={jastiperProfilePicture}
+                          alt={jastiperUsername}
+                          className="h-11 w-11 rounded-full object-cover border-2 border-(--color-primary) shrink-0"
+                      />
+                  ) : (
+                      <div className="h-11 w-11 rounded-full bg-(--color-primary) flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        {jastiperUsername?.[0]?.toUpperCase() ?? 'J'}
+                      </div>
+                  )}
                   <div className="min-w-0">
-                    <Link
-                        href={`/jastiper/${jastiperUsername}`}
-                        className="font-semibold text-gray-800 hover:text-primary transition truncate block"
-                    >
-                      {jastiperUsername}
-                    </Link>
-                    {jastiperFullName && (
-                        <p className="text-xs text-gray-500 truncate">{jastiperFullName}</p>
-                    )}
+                    <p className="font-semibold text-gray-800 group-hover:text-(--color-primary) transition truncate">
+                      {jastiperFullName || '@' + jastiperUsername}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      @{jastiperUsername}
+                    </p>
                     <div className="mt-0.5 flex items-center gap-2">
                       {jastiperAvgRating > 0 && (
                           <RatingStars rating={jastiperAvgRating} size="sm" />
@@ -454,7 +524,7 @@ export default function ProductDetailPage() {
                     </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               </div>
 
               <div className="pt-2">
@@ -499,6 +569,62 @@ export default function ProductDetailPage() {
                   <p className="text-xs text-gray-500 mt-1">Rating Rata-rata</p>
                 </div>
               </div>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-lg font-bold text-gray-900">Ulasan Produk</h2>
+              {ratingsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="animate-pulse rounded-xl border border-gray-200 bg-white p-4">
+                          <div className="h-4 w-32 rounded bg-gray-200 mb-2" />
+                          <div className="h-3 w-full rounded bg-gray-100" />
+                        </div>
+                    ))}
+                  </div>
+              ) : productRatings.length === 0 ? (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+                    <p className="text-sm text-gray-500">Belum ada ulasan untuk produk ini.</p>
+                  </div>
+              ) : (
+                  <div className="space-y-3">
+                    {ratingsAvg > 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg font-bold text-gray-800">{ratingsAvg.toFixed(1)}</span>
+                          <RatingStars rating={ratingsAvg} />
+                          <span className="text-sm text-gray-500">({productRatings.length} ulasan)</span>
+                        </div>
+                    )}
+                    {productRatings.map((r, i) => {
+                      const rating = r.product_rating ?? 0;
+                      const review = r.product_review ?? null;
+                      const username = r.titipers_username ?? null;
+                      const date = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                      return (
+                          <div key={r.rating_product_id ?? i} className="rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-full bg-(--color-primary)/10 flex items-center justify-center text-xs font-bold text-(--color-primary) shrink-0">
+                                  {(username?.[0] ?? 'P').toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">{username ?? 'Pembeli'}</p>
+                                  {username && (
+                                      <p className="text-xs text-gray-400">@{username}</p>
+                                  )}
+                                </div>
+                              </div>
+                              {date && <p className="text-xs text-gray-400">{date}</p>}
+                            </div>
+                            <div className="flex items-center gap-2 mb-1 ml-9">
+                              <RatingStars rating={rating} size="sm" />
+                            </div>
+                            {review && <p className="text-sm text-gray-600 mt-1 ml-9">{review}</p>}
+                          </div>
+                      );
+                    })}
+                  </div>
+              )}
             </section>
           </div>
         </div>
