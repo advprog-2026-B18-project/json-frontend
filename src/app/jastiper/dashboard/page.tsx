@@ -132,7 +132,7 @@ export default function JastiperDashboardPage() {
                 Kelola Dompet
               </Link>
               <Link
-                  href="/jastiper/wallet"
+                  href="/jastiper/wallet/withdraw"
                   className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-orange-700 hover:bg-gray-100 transition"
               >
                 Tarik Saldo
