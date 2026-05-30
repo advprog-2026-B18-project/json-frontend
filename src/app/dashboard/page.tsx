@@ -59,11 +59,14 @@ export default function DashboardPage() {
     try {
       const [profileData, ordersData, walletData] = await Promise.all([
         getMyProfile(accessToken).catch(() => null),
-        getMyPurchases(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }),
+        getMyPurchases(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }).catch(() => ({ data: [] })),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
+
       if (profileData) setProfile(profileData);
-      setOrders(ordersData.data);
+
+      setOrders(ordersData?.data || []);
+
       if (walletData) setWalletBalance(walletData.balance);
     } catch {
       // Fail silently

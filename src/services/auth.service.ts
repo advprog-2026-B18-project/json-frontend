@@ -194,17 +194,13 @@ export type ReviewKycResponse = {
 
 // ---------------------------------------------------------------------------
 // TASK-102: register
-// POST /auth/register  (direct to Auth Service — no BFF needed)
-// Public — no token required
-// Returns HTTP 200 (not 201)
+// POST /auth/register (direct to Auth Service)
 // ---------------------------------------------------------------------------
 
 export type RegisterInput = {
   email: string;
   password: string;
   password_confirmation: string;
-  /** Only TITIPERS or JASTIPER — sending ADMIN returns HTTP 400 */
-  role: 'TITIPERS' | 'JASTIPER';
 };
 
 export async function register(input: RegisterInput): Promise<RegisterResponse> {
