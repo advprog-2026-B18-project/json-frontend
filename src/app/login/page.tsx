@@ -54,11 +54,11 @@ function LoginForm() {
 
       const role = profileData.role?.toUpperCase();
       if (role === 'ADMIN') {
-        router.push('/admin/catalog');
+        router.push('/admin/dashboard');
       } else if (role === 'JASTIPER') {
-        router.push('/jastiper/catalog');
+        router.push('/jastiper/dashboard');
       } else {
-        router.push('/catalog');
+        router.push('/dashboard');
       }
     } catch (err) {
       if (isApiError(err)) {
