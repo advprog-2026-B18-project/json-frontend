@@ -543,7 +543,10 @@ export default function AdminCatalogPage() {
                                   )}
                                 </div>
                                 <div className="min-w-0">
-                                  <Link href={`/catalog/${currentId}`} target="_blank" rel="noopener noreferrer" className="line-clamp-1 font-medium text-gray-900 transition hover:text-primary">
+                                  <Link
+                                      href={`/catalog/${currentId}`}
+                                      className="line-clamp-1 font-medium text-gray-900 transition hover:text-primary"
+                                  >
                                     {p.name}
                                   </Link>
                                   {p.category && <p className="text-xs text-gray-400">{p.category.name || 'Uncategorized'}</p>}
@@ -570,7 +573,10 @@ export default function AdminCatalogPage() {
 
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-end gap-2">
-                                <Link href={`/catalog/${currentId}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-50">
+                                <Link
+                                    href={`/catalog/${currentId}`}
+                                    className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-50"
+                                >
                                   Lihat
                                 </Link>
                                 <button onClick={() => setModerateTarget(product)} className="rounded-lg border border-primary px-3 py-1 text-xs font-medium text-primary transition hover:bg-green-50 cursor-pointer">
