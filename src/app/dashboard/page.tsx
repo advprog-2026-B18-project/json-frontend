@@ -49,29 +49,21 @@ export default function DashboardPage() {
   const [walletLoading, setWalletLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!accessToken) {
+    if (!authLoading && !accessToken) {
       router.push('/login?redirect=/dashboard');
-      return;
     }
-    if (user && user.role !== 'TITIPERS') {
-      router.push(user.role === 'JASTIPER' ? '/jastiper/dashboard' : '/admin/catalog');
-    }
-  }, [authLoading, accessToken, user, router]);
+  }, [authLoading, accessToken, router]);
 
   const fetchDashboard = useCallback(async () => {
     if (!accessToken) return;
     try {
       const [profileData, ordersData, walletData] = await Promise.all([
         getMyProfile(accessToken).catch(() => null),
-        getMyPurchases(accessToken).catch(() => ({ data: [] })),
+        getMyPurchases(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
-
       if (profileData) setProfile(profileData);
-
-      setOrders(ordersData?.data || []);
-
+      setOrders(ordersData.data);
       if (walletData) setWalletBalance(walletData.balance);
     } catch {
       // Fail silently
@@ -85,17 +77,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authLoading && accessToken) fetchDashboard();
   }, [authLoading, accessToken, fetchDashboard]);
-
-  // Auto-refresh saat tab kembali aktif
-  useEffect(() => {
-    function onVisible() {
-      if (document.visibilityState === 'visible') {
-        fetchDashboard();
-      }
-    }
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [fetchDashboard]);
 
   const aktifOrders = orders.filter((o) => ['PENDING', 'PAID', 'PURCHASED', 'SHIPPED'].includes(o.status));
   const completedOrders = orders.filter((o) => o.status === 'COMPLETED');
