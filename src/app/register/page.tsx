@@ -83,12 +83,6 @@ export default function RegisterPage() {
             Buat Akun Baru
           </h1>
 
-          {/* FIX: Info Banner Alur Baru Jastiper */}
-          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 leading-relaxed">
-            <span className="font-semibold block mb-0.5">💡 Informasi Akun:</span>
-            Semua pendaftaran awal otomatis dibuat sebagai akun **Pembeli (Titipers)**. Jika Anda ingin bergabung menjadi **Jastiper**, silakan selesaikan pendaftaran ini, masuk ke akun Anda, dan ajukan verifikasi KYC melalui menu profil.
-          </div>
-
           <form action={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
