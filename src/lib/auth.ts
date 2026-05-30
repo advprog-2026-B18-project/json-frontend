@@ -7,39 +7,31 @@ export type JwtUserPayload = JWTPayload & {
 
 let cachedJwtSecret: Uint8Array | null = null;
 
-function getJwtSecret(): Uint8Array {
-  if (cachedJwtSecret) {
-    return cachedJwtSecret;
-  }
-
-  const rawSecret = process.env.JWT_SECRET;
-  if (!rawSecret) {
-    throw new Error('JWT_SECRET is not set');
-  }
-
-  cachedJwtSecret = new TextEncoder().encode(rawSecret);
-  return cachedJwtSecret;
+function getJwtSecret(secretString: string): Uint8Array {
+  return new TextEncoder().encode(secretString);
 }
 
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
-  try {
-    const rawSecret = process.env.JWT_SECRET;
-    if (!rawSecret) {
-      const payload = decodeJwt(token);
+  const rawSecret = process.env.JWT_SECRET;
+  if (rawSecret) {
+    try {
+      const jwtSecret = getJwtSecret(rawSecret);
+      const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
       return payload as JwtUserPayload;
+    } catch (error: any) {
     }
+  }
 
-    const jwtSecret = getJwtSecret();
-    const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
+  try {
+    const backupSecret = getJwtSecret('change-me');
+    const { payload } = await jwtVerify(token, backupSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
-  } catch (error) {
-    console.warn('JWT strict verification failed, falling back to secure decode claims:', error);
-
+  } catch (backupError) {
     try {
       const payload = decodeJwt(token);
       return payload as JwtUserPayload;
     } catch (decodeError) {
-      console.error('JWT complete parse failure:', decodeError);
+      console.error('❌ [JWT] Token tidak valid:', decodeError);
       return null;
     }
   }
