@@ -32,6 +32,7 @@ import {
   type TransactionStatus,
   type TopUpPaymentMethod,
 } from '@/services/payment.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -420,16 +421,7 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white">Katalog</Link>
-            <Link href="/profile" className="text-sm text-white/80 hover:text-white">Profil</Link>
-          </nav>
-        </div>
-      </header>
+     <Navbar />
 
       <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Dompet JSON Saya</h1>
