@@ -16,7 +16,7 @@ function getJwtSecret(): Uint8Array {
   console.log("raw secret berhasil diambil")
   console.log("Secret di Vercel terbaca:", rawSecret);
 
-  const jwtSecret = new TextEncoder().encode(rawSecret);
+  const jwtSecret = new TextEncoder().encode(rawSecret.trim());
   return jwtSecret;
 }
 
@@ -31,7 +31,7 @@ export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
     } catch (e) {
       console.log("Token bukan JWT yang valid atau terpotong");
     }
-    
+
     const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
