@@ -49,8 +49,6 @@ export default function DashboardPage() {
   const [walletLoading, setWalletLoading] = useState(true);
 
   useEffect(() => {
-    console.log("accessTokennya: ")
-    console.log(accessToken)
     if (!authLoading && !accessToken) {
       router.push('/login?redirect=/dashboard');
     }

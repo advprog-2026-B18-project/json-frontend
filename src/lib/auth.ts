@@ -23,6 +23,7 @@ function getJwtSecret(): Uint8Array {
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
   try {
     const jwtSecret = getJwtSecret();
+    console.log("Secret di Vercel terbaca:", jwtSecret);
     const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
