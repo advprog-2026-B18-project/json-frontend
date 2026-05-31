@@ -23,12 +23,28 @@ function getJwtSecret(): Uint8Array {
     );
   }
 
-  const encoded = new TextEncoder().encode(sanitized);
-  console.log(`[auth] encoded key: ${encoded.length} bytes`);
-  console.log(`[auth] first 10 bytes: [${encoded.slice(0, 10).join(',')}]`);
-  console.log(`[auth] last 5 bytes:  [${encoded.slice(-5).join(',')}]`);
+  // jjwt internally does TextCodec.BASE64.decode(secretString) — standard Base64
+  // Match that: Base64-decode the string to get the raw HMAC key bytes
+  const padded = sanitized.padEnd(Math.ceil(sanitized.length / 4) * 4, '=');
 
-  return encoded;
+  let decoded: Uint8Array;
+  try {
+    const binaryStr = atob(padded);
+    decoded = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      decoded[i] = binaryStr.charCodeAt(i);
+    }
+  } catch {
+    throw new Error(
+      `JWT_SECRET is not a valid Base64 string. jjwt expects a Base64-encoded secret.`
+    );
+  }
+
+  console.log(`[auth] base64-decoded key: ${decoded.length} bytes`);
+  console.log(`[auth] decoded first 10 bytes: [${decoded.slice(0, 10).join(',')}]`);
+  console.log(`[auth] decoded last 5 bytes:  [${decoded.slice(-5).join(',')}]`);
+
+  return decoded;
 }
 
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
