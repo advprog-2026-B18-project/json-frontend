@@ -347,7 +347,7 @@ export async function getMyPurchases(
   if (!res.ok || !body?.data) {
     throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
   }
-  return body.data;
+  return { data: body.data, pagination: body.pagination };
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +390,7 @@ export async function getMySales(
   if (!res.ok || !body?.data) {
     throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
   }
-  return body.data;
+  return { data: body.data, pagination: body.pagination };
 }
 
 
@@ -591,14 +591,20 @@ export async function adminGetOrders(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetAdminOrdersResponse>(
-    `/admin/orders${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
-  );
-  return response.data;
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/admin/orders${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  const body = await res.json().catch(() => null) as GetAdminOrdersResponse | null;
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan admin');
+  }
+  return { data: body.data, pagination: body.pagination };
 }
 
 // ---------------------------------------------------------------------------
