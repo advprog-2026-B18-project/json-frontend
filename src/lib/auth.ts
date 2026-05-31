@@ -6,25 +6,18 @@ export type JwtUserPayload = JWTPayload & {
   role?: 'TITIPERS' | 'JASTIPER' | 'ADMIN';
 };
 
-let cachedJwtSecret: Uint8Array | null = null;
-
 function getJwtSecret(): Uint8Array {
-  if (cachedJwtSecret) {
-    console.log("ada cached jwt secret: ")
-    console.log(cachedJwtSecret)
-    return cachedJwtSecret;
-  }
 
   const rawSecret = process.env.JWT_SECRET;
   if (!rawSecret) {
     throw new Error('JWT_SECRET is not set');
   }
 
-  console.log("raw secret yang berhasil diambil:")
-  console.log(rawSecret)
+  console.log("raw secret berhasil diambil")
+  console.log('JWT_SECRET len=', rawSecret.length);
 
-  cachedJwtSecret = new TextEncoder().encode(rawSecret);
-  return cachedJwtSecret;
+  const jwtSecret = new TextEncoder().encode(rawSecret);
+  return jwtSecret;
 }
 
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
