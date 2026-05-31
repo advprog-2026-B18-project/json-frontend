@@ -1,23 +1,25 @@
 import { decodeJwt, jwtVerify, type JWTPayload } from 'jose';
 
 export type JwtUserPayload = JWTPayload & {
-  // sub is already in JWTPayload (string | undefined)
   email?: string;
   role?: 'TITIPERS' | 'JASTIPER' | 'ADMIN';
 };
 
 function getJwtSecret(): Uint8Array {
-
   const rawSecret = process.env.JWT_SECRET;
   if (!rawSecret) {
     throw new Error('JWT_SECRET is not set');
   }
 
-  console.log("raw secret berhasil diambil")
-  console.log("Secret di Vercel terbaca:", rawSecret);
+  const sanitized = rawSecret.replace(/\s/g, '');
 
-  const jwtSecret = new TextEncoder().encode(rawSecret.trim());
-  return jwtSecret;
+  if (rawSecret !== sanitized) {
+    console.warn(
+      `[auth] JWT_SECRET contained hidden whitespace (length: ${rawSecret.length} → ${sanitized.length}). Stripped to avoid verification failure.`
+    );
+  }
+
+  return new TextEncoder().encode(sanitized);
 }
 
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
@@ -25,17 +27,16 @@ export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
     const jwtSecret = getJwtSecret();
 
     try {
-      // Decode payload TANPA verifikasi signature
       const unsafePayload = decodeJwt(token);
-      console.log("ISI PAYLOAD DI VERCEL:", unsafePayload);
-    } catch (e) {
-      console.log("Token bukan JWT yang valid atau terpotong");
+      console.log('[auth] Decoded payload:', unsafePayload);
+    } catch {
+      console.log('[auth] Token is not a valid JWT');
     }
 
     const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
-    console.error('JWT verification failed', error);
+    console.error('[auth] JWT verification failed:', error);
     return null;
   }
 }
