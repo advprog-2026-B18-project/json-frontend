@@ -6,7 +6,7 @@
  * All endpoints documented in backend-contracts-order-service.md
  */
 
-import { orderRequest } from './api-client';
+import { ApiError, orderRequest } from './api-client';
 import {
   Order,
   OrderStatus,
@@ -334,14 +334,20 @@ export async function getMyPurchases(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetMyPurchasesResponse>(
-    `/orders/my/purchases${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
-  );
-  return response.data;
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/orders/my/purchases${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  const body = await res.json().catch(() => null) as GetMyPurchasesResponse | null;
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
+  }
+  return body.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -371,14 +377,20 @@ export async function getMySales(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetMySalesResponse>(
-    `/orders/my/sales${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
-  );
-  return response.data;
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/orders/my/sales${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  const body = await res.json().catch(() => null) as GetMySalesResponse | null;
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
+  }
+  return body.data;
 }
 
 
