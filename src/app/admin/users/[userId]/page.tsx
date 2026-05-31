@@ -116,6 +116,7 @@ export default function AdminUserDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex">
         <main className="flex-1 p-6 max-w-4xl">
           {/* Header */}
@@ -291,6 +292,7 @@ export default function AdminUserDetailPage() {
             </>
           ) : null}
         </main>
+      </div>
       </div>
     </div>
   );

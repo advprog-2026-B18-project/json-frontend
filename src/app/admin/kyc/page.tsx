@@ -171,7 +171,8 @@ export default function AdminKycPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="flex">
+    <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="flex">
         <main className="flex-1 p-6">
           <div className="max-w-5xl">
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Antrian KYC</h1>
@@ -409,6 +410,7 @@ export default function AdminKycPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

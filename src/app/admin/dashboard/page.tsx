@@ -135,13 +135,7 @@ export default function AdminDashboardPage() {
                             href="/admin/wallet/summary"
                             className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 transition text-white"
                         >
-                            Lihat Ringkasan Finansial
-                        </Link>
-                        <Link
-                            href="/admin/wallet/requests"
-                            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-gray-100 transition"
-                        >
-                            Tinjau Withdrawal Jastiper
+                            Monitor Transaksi
                         </Link>
                     </div>
                 </div>
@@ -229,41 +223,6 @@ export default function AdminDashboardPage() {
                             </table>
                         </div>
                     )}
-                </section>
-
-                {/* Quick Links Grid */}
-                <section>
-                    <h2 className="mb-4 text-lg font-semibold text-gray-800">Akses Modul Kontrol</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <Link
-                            href="/admin/kyc"
-                            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-                        >
-                            <p className="text-sm font-semibold text-gray-900">Modul KYC</p>
-                            <p className="text-xs text-gray-500 mt-1">Verifikasi KTP</p>
-                        </Link>
-                        <Link
-                            href="/admin/users"
-                            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-                        >
-                            <p className="text-sm font-semibold text-gray-900">Manajemen User</p>
-                            <p className="text-xs text-gray-500 mt-1">Kelola data akun</p>
-                        </Link>
-                        <Link
-                            href="/admin/catalog"
-                            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-                        >
-                            <p className="text-sm font-semibold text-gray-900">Moderasi Produk</p>
-                            <p className="text-xs text-gray-500 mt-1">Katalog nasional</p>
-                        </Link>
-                        <Link
-                            href="/admin/wallet/summary"
-                            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-                        >
-                            <p className="text-sm font-semibold text-gray-900">Finansial</p>
-                            <p className="text-xs text-gray-500 mt-1">Escrow & Transaksi</p>
-                        </Link>
-                    </div>
                 </section>
             </main>
         </div>
