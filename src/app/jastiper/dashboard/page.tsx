@@ -143,7 +143,7 @@ export default function JastiperDashboardPage() {
           )}
           <div className="mt-4 flex gap-3">
             <Link
-              href="/jastiper/wallet"
+              href="/wallet"
               className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium hover:bg-white/30 transition"
             >
               Kelola Dompet
