@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { getCategories, createProduct, uploadImageS3 } from '@/services/inventory.service';
 import type { CategoryResponse, ShoppingMode } from '@/services/inventory.service';
 import Link from 'next/link';
+import { Navbar } from '@/components/Navbar';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -103,6 +104,8 @@ export default function NewProductPage() {
   };
 
   return (
+    <div className="min-h-screen bg-gray-50">
+    <Navbar />
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Tambah Produk Jastip</h1>
@@ -202,6 +205,7 @@ export default function NewProductPage() {
           {loading ? 'Sedang Memproses...' : 'Daftarkan Produk Jastip'}
         </button>
       </form>
+    </div>
     </div>
   );
 }

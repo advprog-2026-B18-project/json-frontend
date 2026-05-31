@@ -28,6 +28,7 @@ import {
 } from '@/services/inventory.service';
 import type { ProductResponse, ProductStatus } from '@/services/inventory.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -314,17 +315,7 @@ export default function JastiperCatalogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/jastiper/dashboard" className="text-sm text-white/80 hover:text-white">Dashboard</Link>
-            <Link href="/jastiper/orders" className="text-sm text-white/80 hover:text-white">Pesanan</Link>
-            <span className="text-sm text-white/80">{user?.username ?? user?.email}</span>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
         {/* Page header */}
