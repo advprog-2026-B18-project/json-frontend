@@ -19,6 +19,7 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { StatusBadge } from '@/components/StatusBadge';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useToast } from '@/components/Toast';
+import { Navbar } from '@/components/Navbar';
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -28,42 +29,6 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
-}
-
-function AdminNavbar({ currentPath }: { currentPath: string }) {
-  const links = [
-    { href: '/admin/users', label: 'Pengguna' },
-    { href: '/admin/kyc', label: 'KYC' },
-    { href: '/admin/catalog', label: 'Produk' },
-    { href: '/admin/orders', label: 'Pesanan' },
-    { href: '/admin/wallet/summary', label: 'Keuangan' },
-  ];
-
-  return (
-    <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-        <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Admin navigation">
-          {links.map((link) => {
-            const isActive = currentPath.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm transition ${
-                  isActive
-                    ? 'bg-white/20 font-semibold text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
-  );
 }
 
 function WalletSubNav({ current }: { current: 'summary' | 'requests' | 'transactions' }) {
@@ -215,7 +180,7 @@ export default function AdminWalletRequestsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNavbar currentPath="/admin/wallet/requests" />
+      <Navbar />
       <WalletSubNav current="requests" />
 
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">

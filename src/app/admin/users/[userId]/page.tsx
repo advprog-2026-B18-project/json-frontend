@@ -13,7 +13,6 @@ import {
 } from '@/services/auth.service';
 import { getAdminWallet, type AdminWalletResponse } from '@/services/payment.service';
 import { Navbar } from '@/components/Navbar';
-import { Sidebar } from '@/components/Sidebar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { KYCStatusBanner } from '@/components/KYCStatusBanner';
 import { RatingStars } from '@/components/RatingStars';
@@ -118,7 +117,6 @@ export default function AdminUserDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
-        <Sidebar role="ADMIN" />
         <main className="flex-1 p-6 max-w-4xl">
           {/* Header */}
           <div className="mb-6">
