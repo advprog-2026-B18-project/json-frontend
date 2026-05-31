@@ -221,8 +221,8 @@ export default function AdminWalletRequestsPage() {
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Permintaan Top-Up & Penarikan</h1>
-            <p className="mt-1 text-sm text-gray-500">Tinjau dan proses permintaan yang menunggu persetujuan</p>
+            <h1 className="text-2xl font-bold text-gray-900">Request Top-Up & Withdrawals</h1>
+            <p className="mt-1 text-sm text-gray-500">Tinjau dan proses request yang menunggu persetujuan</p>
           </div>
           <button
             onClick={fetchData}
@@ -260,7 +260,7 @@ export default function AdminWalletRequestsPage() {
                 : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
             }`}
           >
-            Penarikan ({withdrawals.length})
+            Withdrawal ({withdrawals.length})
           </button>
         </div>
 
@@ -284,7 +284,7 @@ export default function AdminWalletRequestsPage() {
           </div>
         ) : currentList.length === 0 ? (
           <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Tidak ada permintaan {activeTab === 'topup' ? 'top-up' : 'penarikan'} yang menunggu.</p>
+            <p className="text-sm text-gray-500">Tidak ada permintaan {activeTab === 'topup' ? 'top-up' : 'withdrawal'} yang menunggu.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -332,7 +332,7 @@ export default function AdminWalletRequestsPage() {
         onClose={() => !actionLoading && setReviewModal(null)}
         onConfirm={handleApprove}
         title="Setujui Permintaan"
-        message={`Anda akan menyetujui ${activeTab === 'topup' ? 'top-up' : 'penarikan'} sebesar ${reviewModal ? formatRupiah(reviewModal.amount) : ''}.`}
+        message={`Anda akan menyetujui ${activeTab === 'topup' ? 'top-up' : 'withdrawal'} sebesar ${reviewModal ? formatRupiah(reviewModal.amount) : ''}.`}
         confirmLabel="Setujui"
         isLoading={actionLoading}
       />

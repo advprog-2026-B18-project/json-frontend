@@ -105,7 +105,7 @@ const TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'PAYMENT', label: 'Pembayaran' },
   { value: 'REFUND', label: 'Refund' },
   { value: 'EARNING', label: 'Penghasilan' },
-  { value: 'WITHDRAWAL', label: 'Penarikan' },
+  { value: 'WITHDRAWAL', label: 'Withdrawal' },
   { value: 'ADJUSTMENT', label: 'Penyesuaian' },
 ];
 

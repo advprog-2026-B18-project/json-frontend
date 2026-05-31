@@ -258,7 +258,7 @@ export default function AdminUserDetailPage() {
                       <span className="font-semibold text-green-600">{formatRupiah(wallet.total_topup_lifetime)}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Total Penarikan</span>
+                      <span className="text-gray-600">Total withdrawal</span>
                       <span className="font-semibold text-red-500">{formatRupiah(wallet.total_withdrawal_lifetime)}</span>
                     </div>
                   </div>

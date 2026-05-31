@@ -273,8 +273,8 @@ export default function AdminWalletSummaryPage() {
           icon: IconArrowDown,
         },
         {
-          label: 'Total Penarikan',
-          description: 'Seluruh penarikan yang diproses',
+          label: 'Total Withdrawals',
+          description: 'Seluruh withdrawal yang diproses',
           value: summary.total_withdrawal,
           variant: 'red' as CardVariant,
           icon: IconArrowUp,
@@ -399,7 +399,7 @@ export default function AdminWalletSummaryPage() {
             >
               <div>
                 <p className="font-semibold text-gray-900 group-hover:text-(--color-primary) transition">
-                  Permintaan Top-Up & Penarikan
+                  Permintaan Top-Up & Withdrawal
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
                   Tinjau dan proses permintaan yang menunggu persetujuan

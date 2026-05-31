@@ -80,12 +80,12 @@ export default function JastiperWithdrawPage() {
         const amountNum = Number(amount);
 
         if (!amount || isNaN(amountNum) || amountNum <= 0) {
-            setFormError('Masukkan nominal penarikan yang valid.');
+            setFormError('Masukkan nominal withdrawal yang valid.');
             return;
         }
 
         if (wallet && amountNum > wallet.balance) {
-            setFormError(`Saldo Anda tidak mencukupi. Maksimal penarikan adalah ${formatRupiah(wallet.balance)}`);
+            setFormError(`Saldo Anda tidak mencukupi. Maksimal withdrawal adalah ${formatRupiah(wallet.balance)}`);
             return;
         }
 
@@ -95,7 +95,7 @@ export default function JastiperWithdrawPage() {
         }
 
         if (!notes.trim()) {
-            setFormError('Catatan penarikan wajib diisi (contoh: Nama Bank & Nama Pemilik Rekening).');
+            setFormError('Catatan withdrawal wajib diisi (contoh: Nama Bank & Nama Pemilik Rekening).');
             return;
         }
 
@@ -108,7 +108,7 @@ export default function JastiperWithdrawPage() {
                 idempotency_key: generateIdempotencyKey(),
             });
 
-            setSuccessMessage(`Pengajuan penarikan sebesar ${formatRupiah(amountNum)} berhasil dikirim! Saldo aktif Anda langsung dikurangi.`);
+            setSuccessMessage(`Pengajuan withdrawal sebesar ${formatRupiah(amountNum)} berhasil dikirim! Saldo aktif Anda langsung dikurangi.`);
             setAmount('');
             setBankAccountId('');
             setNotes('');
@@ -116,7 +116,7 @@ export default function JastiperWithdrawPage() {
             fetchCurrentBalance();
         } catch (err) {
             if (isApiError(err)) {
-                setFormError(err.message || 'Gagal mengajukan penarikan dana.');
+                setFormError(err.message || 'Gagal mengajukan withdrawal dana.');
             } else {
                 setFormError('Terjadi kesalahan koneksi server. Silakan coba lagi.');
             }
@@ -170,13 +170,13 @@ export default function JastiperWithdrawPage() {
                     </div>
                 )}
 
-                {/* Form Input Penarikan Dana */}
+                {/* Form Input withdrawal Dana */}
                 <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
                     <form onSubmit={handleSubmit} noValidate className="space-y-4">
                         {/* Field Nominal */}
                         <div>
                             <label htmlFor="withdraw-amount" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                Nominal Penarikan (IDR) <span className="text-red-500">*</span>
+                                Nominal withdrawal (IDR) <span className="text-red-500">*</span>
                             </label>
                             <input
                                 id="withdraw-amount"
@@ -248,7 +248,7 @@ export default function JastiperWithdrawPage() {
                                 {submitting && (
                                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                 )}
-                                {submitting ? 'Memproses...' : 'Konfirmasi Penarikan'}
+                                {submitting ? 'Memproses...' : 'Konfirmasi withdrawal'}
                             </button>
                         </div>
                     </form>

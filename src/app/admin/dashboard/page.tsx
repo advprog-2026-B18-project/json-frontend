@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
                             href="/admin/wallet/requests"
                             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-gray-100 transition"
                         >
-                            Tinjau Penarikan Jastiper
+                            Tinjau Withdrawal Jastiper
                         </Link>
                     </div>
                 </div>
