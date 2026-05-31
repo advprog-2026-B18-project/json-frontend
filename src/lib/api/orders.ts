@@ -279,7 +279,13 @@ export interface GetOrderHistoryResponse {
 export interface GetMyPurchasesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -289,7 +295,13 @@ export interface GetMyPurchasesResponse {
 export interface GetMySalesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -386,7 +398,13 @@ export interface InvalidStatusTransitionError {
 export interface GetAdminOrdersResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**

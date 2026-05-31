@@ -266,7 +266,7 @@ export function Navbar() {
                           <Link href="/catalog" className={getMobileLinkClass('/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog</Link>
                           <Link href="/jastiper/catalog" className={getMobileLinkClass('/jastiper/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog Saya</Link>
                           <Link href="/jastiper/orders" className={getMobileLinkClass('/jastiper/orders')} onClick={() => setShowMobileMenu(false)}>Kelola Pesanan</Link>
-                          <Link href="/jastiper/wallet" className={getMobileLinkClass('/jastiper/wallet')} onClick={() => setShowMobileMenu(false)}>Dompet</Link>
+                          <Link href="/wallet" className={getMobileLinkClass('/wallet')} onClick={() => setShowMobileMenu(false)}>Dompet</Link>
                         </>
                     )}
 
