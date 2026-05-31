@@ -10,6 +10,8 @@ let cachedJwtSecret: Uint8Array | null = null;
 
 function getJwtSecret(): Uint8Array {
   if (cachedJwtSecret) {
+    console.log("ada cached jwt secret: ")
+    console.log(cachedJwtSecret)
     return cachedJwtSecret;
   }
 
@@ -17,6 +19,9 @@ function getJwtSecret(): Uint8Array {
   if (!rawSecret) {
     throw new Error('JWT_SECRET is not set');
   }
+
+  console.log("raw secret yang berhasil diambil:")
+  console.log(rawSecret)
 
   cachedJwtSecret = new TextEncoder().encode(rawSecret);
   return cachedJwtSecret;

@@ -249,6 +249,9 @@ export async function login(input: LoginInput): Promise<LoginResponse> {
     throw new ApiError(502, 'Respons tidak valid dari server.');
   }
 
+  console.log("berhasil login")
+  console.log(body)
+
   return body;
 }
 
