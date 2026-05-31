@@ -20,10 +20,11 @@ import { getProduct, isApiError } from '@/services/inventory.service';
 import type { ProductResponse } from '@/services/inventory.service';
 import { getWallet } from '@/services/payment.service';
 import { createOrder } from '@/services/order.service';
+import type { CreateOrderRequest } from '@/lib/api/orders';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -144,6 +145,12 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Idempotency key — generated once per page load
+  const idempotencyKey = useRef<string | null>(null);
+  useEffect(() => {
+    idempotencyKey.current = crypto.randomUUID();
+  }, []);
+
   // ---------------------------------------------------------------------------
   // Auth guard — redirect after auth resolves
   // ---------------------------------------------------------------------------
@@ -239,7 +246,7 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const order = await createOrder(accessToken, {
+      const body: CreateOrderRequest & { idempotency_key?: string } = {
         product_id: productId,
         quantity,
         shipping_address: {
@@ -254,10 +261,20 @@ export default function CheckoutPage() {
           notes: shipping.notes.trim() || null,
         },
         note_to_jastiper: noteToJastiper.trim() || null,
-      });
+      };
+
+      if (idempotencyKey.current) {
+        body.idempotency_key = idempotencyKey.current;
+      }
+
+      const order = await createOrder(accessToken, body);
 
       router.push(`/orders/${order.order_id}`);
     } catch (err) {
+      if (isApiError(err) && err.status === 409) {
+        setSubmitError('Pesanan ini sudah diproses. Silakan periksa riwayat pesanan Anda.');
+        return;
+      }
       if (isApiError(err)) {
         setSubmitError(err.message || 'Gagal membuat pesanan. Silakan coba lagi.');
       } else {

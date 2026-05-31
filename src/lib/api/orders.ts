@@ -176,6 +176,7 @@ export interface CreateOrderRequest {
   quantity: number; // Min 1
   shipping_address: ShippingAddress;
   note_to_jastiper?: string | null; // Max 500 chars
+  idempotency_key?: string; // UUID v4 — prevents double submit
 }
 
 /**

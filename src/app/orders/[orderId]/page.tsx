@@ -19,6 +19,7 @@ import {
   type OrderHistory,
 } from '@/services/order.service';
 import type { JastiperRating, ProductRating } from '@/lib/api/orders';
+import { getPublicProfileById, type PublicProfileResponse } from '@/services/auth.service';
 import { isApiError } from '@/services/api-client';
 import type { WalletResponse } from '@/services/payment.service';
 import { Navbar } from '@/components/Navbar';
@@ -50,6 +51,7 @@ export default function OrderDetailPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [history, setHistory] = useState<OrderHistory[]>([]);
+  const [jastiperProfile, setJastiperProfile] = useState<PublicProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -105,6 +107,11 @@ export default function OrderDetailPage() {
       ]);
       setOrder(orderData);
       setHistory(historyData);
+
+      // Fetch jastiper profile
+      getPublicProfileById(orderData.jastiper_id)
+        .then(setJastiperProfile)
+        .catch(() => {});
 
       // Fetch wallet balance for PAY button pre-check (TASK-419)
       fetchWallet();
@@ -359,7 +366,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Product Snapshot */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <Link href={`/catalog/${order.product_id}`} className="rounded-2xl bg-white p-6 shadow-sm block hover:shadow-md transition">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Detail Produk</h2>
               <div className="flex gap-4">
                 <div className="h-20 w-20 shrink-0 rounded-lg bg-gray-100 overflow-hidden">
@@ -379,7 +386,7 @@ export default function OrderDetailPage() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-(--color-primary) hover:underline">
                     {order.product_snapshot?.name ?? 'Produk'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -395,15 +402,47 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Jastiper Info */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-900 mb-2">Jastiper</h2>
-              <p className="text-sm text-gray-600">
-                ID Jastiper: {order.jastiper_id}
-              </p>
-            </div>
+            {jastiperProfile ? (
+              <Link
+                href={`/jastiper/${jastiperProfile.username}`}
+                className="rounded-2xl bg-white p-6 shadow-sm block hover:shadow-md transition"
+              >
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Jastiper</h2>
+                <div className="flex items-center gap-3">
+                  {jastiperProfile.profile_picture_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={jastiperProfile.profile_picture_url}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover bg-gray-100"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-(--color-primary)/10 flex items-center justify-center text-(--color-primary) font-semibold text-sm">
+                      {(jastiperProfile.full_name || jastiperProfile.username || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {jastiperProfile.full_name || jastiperProfile.username}
+                    </p>
+                    <p className="text-xs text-gray-500">@{jastiperProfile.username}</p>
+                  </div>
+                  <svg className="h-5 w-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            ) : (
+              <div className="rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Jastiper</h2>
+                <p className="text-sm text-gray-600">
+                  ID: {order.jastiper_id}
+                </p>
+              </div>
+            )}
 
             {/* Shipping Address */}
             {order.shipping_address && (
