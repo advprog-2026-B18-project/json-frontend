@@ -181,7 +181,7 @@ export default function PublicProfilePage() {
                 </div>
                 <div className="rounded-lg bg-gray-50 p-3 text-center">
                   <p className="text-lg font-bold text-gray-800">
-                    {(profile.stats.success_rate * 100).toFixed(0)}%
+                    {profile.stats.success_rate.toFixed(0)}%
                   </p>
                   <p className="text-xs text-gray-400">Selesai Berhasil</p>
                 </div>
