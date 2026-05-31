@@ -35,6 +35,7 @@ import {
   type TransactionDirection,
   type TransactionStatus,
   type TopUpPaymentMethod,
+  getTransactions,
 } from '@/services/payment.service';
 import { Navbar } from '@/components/Navbar';
 
@@ -59,7 +60,7 @@ const TABS: { value: TabFilter; label: string }[] = [
   { value: 'PAYMENT', label: 'Pembayaran' },
   { value: 'REFUND', label: 'Refund' },
   { value: 'EARNING', label: 'Penghasilan' },
-  { value: 'WITHDRAWAL', label: 'withdrawal' },
+  { value: 'WITHDRAWAL', label: 'Withdrawal' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -324,7 +325,7 @@ type WithdrawModalProps = {
 function WithdrawModal({ onClose, onSuccess, accessToken, walletBalance }: WithdrawModalProps) {
   const [amount, setAmount] = useState('');
   const [bankAccountId, setBankAccountId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState('BCA');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -433,21 +434,20 @@ function WithdrawModal({ onClose, onSuccess, accessToken, walletBalance }: Withd
 
           {/* Notes */}
           <div>
-            <label htmlFor="withdraw-notes" className="mb-1.5 block text-sm font-medium text-gray-700">
-              Informasi Pemilik Rekening (Catatan) <span className="text-red-500">*</span>
+            <label htmlFor="withdrawal-bank" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Bank <span className="text-red-500">*</span>
             </label>
-            <textarea
-              id="withdraw-notes"
-              rows={3}
+            <select
+              id="withdrawal-bank"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Nama Bank, Nama Pemilik, & Cabang. Contoh: Bank BCA, A/N Raihana Auni Zakia"
               disabled={submitting}
-              className={`${inputCls} resize-none`}
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              Catatan ini wajib diisi dengan detail untuk mempercepat verifikasi transfer manual oleh tim administrator.
-            </p>
+              className={inputCls}
+              >
+              {BANK_CODES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
 
           {/* Info note */}
@@ -548,7 +548,7 @@ export default function WalletPage() {
     setLoadingTx(true);
     setTxError('');
     try {
-      const data = await authorizedFetch<TransactionSummary[]>('payment', '/transactions');
+      const data = await getTransactions(accessToken);
       setTransactions(data);
     } catch (err) {
       if (isApiError(err)) {
