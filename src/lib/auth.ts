@@ -1,4 +1,4 @@
-import { jwtVerify, type JWTPayload } from 'jose';
+import { decodeJwt, jwtVerify, type JWTPayload } from 'jose';
 
 export type JwtUserPayload = JWTPayload & {
   // sub is already in JWTPayload (string | undefined)
@@ -23,6 +23,15 @@ function getJwtSecret(): Uint8Array {
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
   try {
     const jwtSecret = getJwtSecret();
+
+    try {
+      // Decode payload TANPA verifikasi signature
+      const unsafePayload = decodeJwt(token);
+      console.log("ISI PAYLOAD DI VERCEL:", unsafePayload);
+    } catch (e) {
+      console.log("Token bukan JWT yang valid atau terpotong");
+    }
+    
     const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
