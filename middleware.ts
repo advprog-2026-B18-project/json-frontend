@@ -11,6 +11,29 @@ function redirectToLogin(request: NextRequest) {
   return NextResponse.redirect(loginUrl);
 }
 
+async function refreshTokenOnBackend(token: string): Promise<string | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+    if (!baseUrl) return null;
+
+    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: token }),
+    });
+    if (!res.ok) return null;
+
+    const body = await res.json().catch(() => null) as {
+      success?: boolean;
+      data?: { refresh_token?: string };
+    } | null;
+
+    return body?.data?.refresh_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
@@ -30,7 +53,17 @@ export async function middleware(request: NextRequest) {
   if (isAdminRoute || isJastiperProtectedRoute || isGeneralProtectedRoute) {
     if (!token) return redirectToLogin(request);
 
-    const payload = await verifyJwt(token);
+    let payload = await verifyJwt(token);
+    let newToken: string | undefined;
+
+    if (!isLoggedIn(payload)) {
+      const refreshed = await refreshTokenOnBackend(token);
+      if (refreshed) {
+        payload = await verifyJwt(refreshed);
+        if (isLoggedIn(payload)) newToken = refreshed;
+      }
+    }
+
     if (!isLoggedIn(payload)) return redirectToLogin(request);
 
     if (isAdminRoute && !isAdmin(payload)) {
@@ -45,7 +78,18 @@ export async function middleware(request: NextRequest) {
     if (payload?.sub) requestHeaders.set('x-user-id', payload.sub);
     if (payload?.role) requestHeaders.set('x-role', payload.role);
 
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    if (newToken) {
+      response.cookies.set({
+        name: REFRESH_TOKEN_COOKIE,
+        value: newToken,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
+    return response;
   }
 
   return NextResponse.next();

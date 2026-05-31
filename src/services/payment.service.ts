@@ -82,10 +82,15 @@ export type TransactionSummary = {
 };
 
 export async function getTransactions(token: string): Promise<TransactionSummary[]> {
-  return paymentRequest<TransactionSummary[]>('/transactions', {
+  let txs = await paymentRequest<TransactionSummary[]>('/transactions', {
     method: 'GET',
     token,
   });
+
+  // DESC by created_at (newest first)
+  return txs
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 // ---------------------------------------------------------------------------

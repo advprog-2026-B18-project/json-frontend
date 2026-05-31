@@ -189,7 +189,7 @@
 - [x] TASK-419: ⚠️ CONCURRENCY: Implement wallet balance pre-check for the "Bayar Sekarang" button on the order detail page (/orders/[orderId]) — fetch GET /wallets/me and compare balance to order total_price before enabling the pay button. NOTE: This check is on the ORDER DETAIL page, not the checkout form submission. The checkout page (POST /orders) creates the order first; the pay button appears on the subsequent order detail page. | Est: 1h
 
 ### Phase 4: Frontend Pages and Components
-- [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up form, transaction history with filter tabs | Est: 4h
+- [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up modal (+ Top-Up), withdraw modal (− Withdraw) with amount/bank_account_id/notes fields, transaction history with filter tabs | Est: 5h
 - [x] TASK-421: Build /jastiper/wallet page (src/app/jastiper/wallet/page.tsx) — wallet balance, withdrawal form, earnings history | Est: 3h
 - [ ] TASK-422a: Build /admin/wallet/summary page (src/app/admin/wallet/summary/page.tsx) — platform financial summary cards: total_topup, total_withdrawal, total_payment, total_refund, total_earning, platform_escrow_balance; fetched from GET /admin/transactions summary field | Est: 2h
 - [ ] TASK-422b: Build /admin/wallet/requests page (src/app/admin/wallet/requests/page.tsx) — pending top-up requests list with Approve/Reject actions (PATCH /admin/topups/{id}), pending withdrawal requests list with Approve/Reject actions (PATCH /admin/withdrawals/{id}); reject opens modal for rejection_reason | Est: 2h

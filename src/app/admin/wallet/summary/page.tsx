@@ -24,6 +24,7 @@ import type {
   AdminTransactionSummary,
   AdminTransactionListResponse,
 } from '@/services/payment.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,48 +32,6 @@ import type {
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
-}
-
-// ---------------------------------------------------------------------------
-// Admin Navbar (shared pattern across admin pages)
-// ---------------------------------------------------------------------------
-
-function AdminNavbar({ currentPath }: { currentPath: string }) {
-  const links = [
-    { href: '/admin/users', label: 'Pengguna' },
-    { href: '/admin/kyc', label: 'KYC' },
-    { href: '/admin/catalog', label: 'Produk' },
-    { href: '/admin/orders', label: 'Pesanan' },
-    { href: '/admin/wallet/summary', label: 'Keuangan' },
-  ];
-
-  return (
-    <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-xl font-extrabold text-white">
-          JSON
-        </Link>
-        <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Admin navigation">
-          {links.map((link) => {
-            const isActive = currentPath.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm transition ${
-                  isActive
-                    ? 'bg-white/20 font-semibold text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -273,8 +232,8 @@ export default function AdminWalletSummaryPage() {
           icon: IconArrowDown,
         },
         {
-          label: 'Total Penarikan',
-          description: 'Seluruh penarikan yang diproses',
+          label: 'Total Withdrawals',
+          description: 'Seluruh withdrawal yang diproses',
           value: summary.total_withdrawal,
           variant: 'red' as CardVariant,
           icon: IconArrowUp,
@@ -312,7 +271,7 @@ export default function AdminWalletSummaryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNavbar currentPath="/admin/wallet/summary" />
+      <Navbar />
       <WalletSubNav current="summary" />
 
       <main className="mx-auto max-w-7xl px-4 py-8">
@@ -389,57 +348,6 @@ export default function AdminWalletSummaryPage() {
                 />
               ))}
         </div>
-
-        {/* Quick links */}
-        {!loading && !error && (
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Link
-              href="/admin/wallet/requests"
-              className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-(--color-primary) hover:shadow-md transition group"
-            >
-              <div>
-                <p className="font-semibold text-gray-900 group-hover:text-(--color-primary) transition">
-                  Permintaan Top-Up & Penarikan
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Tinjau dan proses permintaan yang menunggu persetujuan
-                </p>
-              </div>
-              <svg
-                className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-(--color-primary) transition"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-
-            <Link
-              href="/admin/wallet/transactions"
-              className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-(--color-primary) hover:shadow-md transition group"
-            >
-              <div>
-                <p className="font-semibold text-gray-900 group-hover:text-(--color-primary) transition">
-                  Semua Transaksi & Penyesuaian
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Monitor seluruh transaksi dan lakukan penyesuaian saldo manual
-                </p>
-              </div>
-              <svg
-                className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-(--color-primary) transition"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-        )}
       </main>
     </div>
   );

@@ -13,7 +13,6 @@ import {
 } from '@/services/auth.service';
 import { getAdminWallet, type AdminWalletResponse } from '@/services/payment.service';
 import { Navbar } from '@/components/Navbar';
-import { Sidebar } from '@/components/Sidebar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { KYCStatusBanner } from '@/components/KYCStatusBanner';
 import { RatingStars } from '@/components/RatingStars';
@@ -117,8 +116,8 @@ export default function AdminUserDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex">
-        <Sidebar role="ADMIN" />
         <main className="flex-1 p-6 max-w-4xl">
           {/* Header */}
           <div className="mb-6">
@@ -258,7 +257,7 @@ export default function AdminUserDetailPage() {
                       <span className="font-semibold text-green-600">{formatRupiah(wallet.total_topup_lifetime)}</span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Total Penarikan</span>
+                      <span className="text-gray-600">Total withdrawal</span>
                       <span className="font-semibold text-red-500">{formatRupiah(wallet.total_withdrawal_lifetime)}</span>
                     </div>
                   </div>
@@ -293,6 +292,7 @@ export default function AdminUserDetailPage() {
             </>
           ) : null}
         </main>
+      </div>
       </div>
     </div>
   );

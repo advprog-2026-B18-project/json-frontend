@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { getProduct, isApiError } from '@/services/inventory.service';
 import type { ProductResponse } from '@/services/inventory.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -337,23 +338,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white">Katalog</Link>
-            {isAuthenticated ? (
-              <span className="text-sm text-white/80">{user?.username ?? user?.email}</span>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm text-white/80 hover:text-white">Masuk</Link>
-                <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100">Daftar</Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
         {/* Breadcrumb */}

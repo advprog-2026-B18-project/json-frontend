@@ -21,6 +21,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useToast } from '@/components/Toast';
+import { Navbar } from '@/components/Navbar';
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -30,42 +31,6 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
-}
-
-function AdminNavbar({ currentPath }: { currentPath: string }) {
-  const links = [
-    { href: '/admin/users', label: 'Pengguna' },
-    { href: '/admin/kyc', label: 'KYC' },
-    { href: '/admin/catalog', label: 'Produk' },
-    { href: '/admin/orders', label: 'Pesanan' },
-    { href: '/admin/wallet/summary', label: 'Keuangan' },
-  ];
-
-  return (
-    <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-        <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Admin navigation">
-          {links.map((link) => {
-            const isActive = currentPath.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm transition ${
-                  isActive
-                    ? 'bg-white/20 font-semibold text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-    </header>
-  );
 }
 
 function WalletSubNav({ current }: { current: 'summary' | 'requests' | 'transactions' }) {
@@ -101,20 +66,20 @@ function WalletSubNav({ current }: { current: 'summary' | 'requests' | 'transact
 
 const TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Tipe' },
-  { value: 'TOPUP', label: 'Top-Up' },
-  { value: 'PAYMENT', label: 'Pembayaran' },
-  { value: 'REFUND', label: 'Refund' },
-  { value: 'EARNING', label: 'Penghasilan' },
-  { value: 'WITHDRAWAL', label: 'Penarikan' },
-  { value: 'ADJUSTMENT', label: 'Penyesuaian' },
+  { value: 'TOPUP', label: 'TOPUP' },
+  { value: 'PAYMENT', label: 'PAYMENT' },
+  { value: 'REFUND', label: 'REFUND' },
+  { value: 'EARNING', label: 'EARNING' },
+  { value: 'WITHDRAWAL', label: 'WITHDRAWAL' },
+  { value: 'ADJUSTMENT', label: 'ADJUSTMENT' },
 ];
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Semua Status' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'SUCCESS', label: 'Sukses' },
-  { value: 'FAILED', label: 'Gagal' },
-  { value: 'CANCELLED', label: 'Dibatalkan' },
+  { value: 'PENDING', label: 'PENDING' },
+  { value: 'SUCCESS', label: 'SUCCESS' },
+  { value: 'FAILED', label: 'FAILED' },
+  { value: 'CANCELLED', label: 'CANCELLED' },
 ];
 
 export default function AdminWalletTransactionsPage() {
@@ -227,7 +192,7 @@ export default function AdminWalletTransactionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNavbar currentPath="/admin/wallet/transactions" />
+      <Navbar />
       <WalletSubNav current="transactions" />
 
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-6">
@@ -315,7 +280,7 @@ export default function AdminWalletTransactionsPage() {
                 {transactions.map((tx) => (
                   <tr key={tx.transaction_id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                      {tx.transaction_id.slice(0, 8)}
+                      {tx.transaction_id}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`font-medium ${
@@ -331,9 +296,9 @@ export default function AdminWalletTransactionsPage() {
                       <StatusBadge status={tx.status} type="transaction" />
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {tx.user.user_id.slice(0, 8)}
+                      {tx.user.user_id}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate">
+                    <td className="px-4 py-3 text-gray-500 max-w-xs">
                       {tx.description}
                     </td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">

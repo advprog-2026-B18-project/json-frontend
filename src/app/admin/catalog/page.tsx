@@ -35,6 +35,7 @@ import type {
   ProductStatus,
   ModerationAction,
 } from '@/services/inventory.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -434,34 +435,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">
-            JSON
-          </Link>
-          <nav className="flex items-center gap-4 overflow-x-auto">
-            <Link href="/admin/dashboard" className="shrink-0 text-sm text-white/80 hover:text-white">
-              Dashboard
-            </Link>
-            <Link href="/admin/users" className="shrink-0 text-sm text-white/80 hover:text-white">
-              Pengguna
-            </Link>
-            <Link href="/admin/kyc" className="shrink-0 text-sm text-white/80 hover:text-white">
-              KYC
-            </Link>
-            <Link href="/admin/catalog" className="shrink-0 text-sm font-semibold text-white">
-              Produk
-            </Link>
-            <Link href="/admin/orders" className="shrink-0 text-sm text-white/80 hover:text-white">
-              Pesanan
-            </Link>
-            <Link href="/admin/wallet" className="shrink-0 text-sm text-white/80 hover:text-white">
-              Keuangan
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Page header */}

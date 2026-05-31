@@ -88,7 +88,7 @@ export default function JastiperDashboardPage() {
         getMySales(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
-      setOrders(ordersData.data);
+      setOrders(ordersData?.data || []);
       if (walletData) setWalletBalance(walletData.balance);
     } catch (err) {
       if (isApiError(err)) {
@@ -147,12 +147,6 @@ export default function JastiperDashboardPage() {
               className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium hover:bg-white/30 transition"
             >
               Kelola Dompet
-            </Link>
-            <Link
-              href="/jastiper/wallet"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-orange-700 hover:bg-gray-100 transition"
-            >
-              Tarik Saldo
             </Link>
           </div>
         </div>
@@ -296,30 +290,6 @@ export default function JastiperDashboardPage() {
           )}
         </section>
 
-        {/* Quick Links */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Link
-            href="/jastiper/orders"
-            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-          >
-            <p className="text-sm font-semibold text-gray-900">Pesanan</p>
-            <p className="text-xs text-gray-500 mt-1">Kelola pesanan</p>
-          </Link>
-          <Link
-            href="/jastiper/catalog"
-            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-          >
-            <p className="text-sm font-semibold text-gray-900">Katalog</p>
-            <p className="text-xs text-gray-500 mt-1">Atur produk</p>
-          </Link>
-          <Link
-            href="/jastiper/wallet"
-            className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-          >
-            <p className="text-sm font-semibold text-gray-900">Dompet</p>
-            <p className="text-xs text-gray-500 mt-1">Tarik saldo</p>
-          </Link>
-        </section>
       </main>
     </div>
   );

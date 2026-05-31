@@ -12,6 +12,7 @@ import {
   type AccountStatus,
   type UserRole,
 } from '@/services/auth.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -212,8 +213,9 @@ export default function AdminUsersPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gray-50 px-4 py-8">
-        <div className="mx-auto max-w-6xl">
+      <main className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="mx-auto max-w-6xl px-4 py-8">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Manajemen Pengguna</h1>

@@ -10,7 +10,7 @@ const TYPE_LABEL: Record<string, string> = {
   PAYMENT: 'Pembayaran',
   REFUND: 'Refund',
   EARNING: 'Penghasilan',
-  WITHDRAWAL: 'Penarikan',
+  WITHDRAWAL: 'withdrawal',
   ADJUSTMENT: 'Penyesuaian',
 };
 

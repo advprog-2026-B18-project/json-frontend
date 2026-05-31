@@ -136,7 +136,7 @@ export function Navbar() {
                         <Link href="/catalog" className={getLinkClass('/catalog')}>Katalog</Link>
                         <Link href="/jastiper/catalog" className={getLinkClass('/jastiper/catalog')}>Katalog Saya</Link>
                         <Link href="/jastiper/orders" className={getLinkClass('/jastiper/orders')}>Kelola Pesanan</Link>
-                        <Link href="/jastiper/wallet" className={getLinkClass('/jastiper/wallet')}>Dompet</Link>
+                        <Link href="/wallet" className={getLinkClass('/wallet')}>Dompet</Link>
                       </>
                   )}
 

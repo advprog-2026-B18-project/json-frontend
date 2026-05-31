@@ -31,7 +31,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import type { AccountResponse } from '@/services/auth.service';
+import { getMyProfile, type AccountResponse } from '@/services/auth.service';
 
 // ---------------------------------------------------------------------------
 // Context shape
@@ -126,9 +126,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } | null;
 
         if (!cancelled && body?.access_token) {
-          setAccessTokenState(body.access_token);
-          // Note: the refresh-token BFF does not return user info.
-          // User info will be populated on the next login or via getMyProfile.
+          const token = body.access_token;
+          setAccessTokenState(token);
+
+          // Populate user info so role-based UI (Navbar) works after reload/tab.
+          // The refresh-token BFF does not return user info.
+          const profile = await getMyProfile(token).catch(() => null);
+          if (!cancelled && profile) {
+            setUser({
+              user_id: profile.user_id,
+              email: profile.email,
+              role: profile.role,
+              username: profile.username,
+              status: profile.status,
+            });
+          }
         }
       } catch {
         // Network error or BFF unavailable — fail silently.

@@ -933,12 +933,12 @@ Full-width layout with Navbar and Sidebar:
 ### User Interactions
 - Clicking "Tarik Dana" expands the withdrawal form or opens a modal
 - Submitting the withdrawal form calls POST /withdrawals with auto-generated idempotency_key
-- On success: toast "Permintaan penarikan berhasil dikirim. Menunggu proses admin."
+- On success: toast "Permintaan withdrawal berhasil dikirim. Menunggu proses admin."
 - Balance is immediately deducted on withdrawal submission
 
 ### Edge Cases and States
 - Loading state: WalletSummary skeleton and TransactionRow skeletons
-- Insufficient balance: Error "Saldo tidak mencukupi untuk penarikan ini"
+- Insufficient balance: Error "Saldo tidak mencukupi untuk withdrawal ini"
 - Duplicate idempotency_key: Error "Permintaan duplikat terdeteksi"
 - Withdrawal pending: Shows pending badge on withdrawal transaction row
 
@@ -1214,7 +1214,7 @@ Admin layout with Navbar and Sidebar:
 
 ### Layout and Components
 Admin layout with Navbar and Sidebar:
-- Two tabs: "Top-Up" and "Penarikan"
+- Two tabs: "Top-Up" and "withdrawal"
 - Top-Up tab: list of PENDING top-up requests — transaction_id, amount, created_at, Approve button, Reject button
 - Withdrawal tab: list of PENDING withdrawal requests — transaction_id, amount, created_at, Approve button, Reject button
 - Reject action opens a modal with a rejection_reason textarea before submitting
