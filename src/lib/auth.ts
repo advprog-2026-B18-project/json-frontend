@@ -14,7 +14,7 @@ function getJwtSecret(): Uint8Array {
   }
 
   console.log("raw secret berhasil diambil")
-  console.log('JWT_SECRET len=', rawSecret.length);
+  console.log("Secret di Vercel terbaca:", rawSecret);
 
   const jwtSecret = new TextEncoder().encode(rawSecret);
   return jwtSecret;
@@ -23,7 +23,6 @@ function getJwtSecret(): Uint8Array {
 export async function verifyJwt(token: string): Promise<JwtUserPayload | null> {
   try {
     const jwtSecret = getJwtSecret();
-    console.log("Secret di Vercel terbaca:", jwtSecret);
     const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return payload as JwtUserPayload;
   } catch (error) {
