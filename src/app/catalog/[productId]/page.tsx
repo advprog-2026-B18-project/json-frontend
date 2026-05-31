@@ -17,6 +17,8 @@ import { useEffect, useState } from 'react';
 
 import { getProduct, isApiError } from '@/services/inventory.service';
 import type { ProductResponse } from '@/services/inventory.service';
+import { getProductRatings } from '@/services/order.service';
+import type { ProductRating } from '@/lib/api/orders';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { Navbar } from '@/components/Navbar';
 
@@ -171,6 +173,9 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [ratings, setRatings] = useState<ProductRating[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
+  const [ratingsAvg, setRatingsAvg] = useState(0);
 
   // ---------------------------------------------------------------------------
   // Fetch product
@@ -192,6 +197,23 @@ export default function ProductDetailPage() {
         }
       })
       .finally(() => setLoading(false));
+  }, [rawProductId]);
+
+  // ---------------------------------------------------------------------------
+  // Fetch product ratings
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!rawProductId || rawProductId === 'undefined') return;
+    setRatingsLoading(true);
+    getProductRatings(rawProductId, { page: 1, limit: 10 })
+      .then((data) => {
+        setRatings(data.ratings);
+        setRatingsAvg(data.average_rating);
+      })
+      .catch(() => {
+        setRatings([]);
+      })
+      .finally(() => setRatingsLoading(false));
   }, [rawProductId]);
 
   // ---------------------------------------------------------------------------
@@ -528,6 +550,64 @@ export default function ProductDetailPage() {
                 <p className="text-xs text-gray-500 mt-1">Rating Rata-rata</p>
               </div>
             </div>
+          </section>
+
+          {/* Product Reviews */}
+          <section>
+            <h2 className="mb-3 text-lg font-bold text-gray-900">Ulasan Produk</h2>
+            {ratingsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="h-4 w-32 rounded bg-gray-200 mb-2" />
+                    <div className="h-3 w-full rounded bg-gray-100" />
+                  </div>
+                ))}
+              </div>
+            ) : ratings.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+                <p className="text-sm text-gray-500">Belum ada ulasan untuk produk ini.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ratings.map((r) => (
+                  <div key={r.rating_product_id} className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          P
+                        </div>
+                        <p className="text-sm font-medium text-gray-800">Pembeli</p>
+                      </div>
+                      {r.created_at && (
+                        <p className="text-xs text-gray-400">
+                          {new Date(r.created_at).toLocaleDateString('id-ID')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-1 ml-9">
+                      <RatingStars rating={r.product_rating} />
+                    </div>
+                    {r.product_review && (
+                      <p className="text-sm text-gray-600 mt-1 ml-9">{r.product_review}</p>
+                    )}
+                    {r.product_images && r.product_images.length > 0 && (
+                      <div className="mt-2 ml-9 flex gap-2">
+                        {r.product_images.map((img, idx) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={`Foto ulasan ${idx + 1}`}
+                            className="h-16 w-16 rounded-lg object-cover border border-gray-100"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>

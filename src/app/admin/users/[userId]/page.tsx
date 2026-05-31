@@ -215,7 +215,7 @@ export default function AdminUserDetailPage() {
                       <p className="text-xs text-gray-500">Tingkat Keberhasilan</p>
                       <p className="text-xl font-bold text-gray-900">
                         {userDetail.stats.successRate != null
-                          ? `${(userDetail.stats.successRate * 100).toFixed(0)}%`
+                          ? `${userDetail.stats.successRate.toFixed(0)}%`
                           : '-'}
                       </p>
                     </div>

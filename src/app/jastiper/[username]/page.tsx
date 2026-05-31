@@ -296,7 +296,7 @@ export default function JastiperProfilePage() {
                       </div>
                       <div className="text-left">
                         <p className="text-lg font-bold text-gray-800 tracking-tight">
-                          {(profile.stats.success_rate * 100).toFixed(0)}%
+                          {profile.stats.success_rate.toFixed(0)}%
                         </p>
                         <p className="text-xs text-gray-400">Selesai Berhasil</p>
                       </div>
