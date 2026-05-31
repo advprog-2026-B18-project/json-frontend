@@ -95,6 +95,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // -------------------------------------------------------------------------
+  // Shared refresh logic (used by initial restore + periodic refresh)
+  // -------------------------------------------------------------------------
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/auth/refresh-token', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) return null;
+
+      const body = await res.json().catch(() => null) as {
+        access_token?: string;
+      } | null;
+
+      if (!body?.access_token) return null;
+
+      const newToken = body.access_token;
+      setAccessTokenState(newToken);
+      return newToken;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
   // Auto-refresh on mount
   //
   // Attempts to restore the session by calling the BFF refresh-token route.
@@ -108,45 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     async function tryRestoreSession() {
-      try {
-        const res = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-
-        if (!res.ok) {
-          // No valid cookie — user is unauthenticated. Fail silently.
-          return;
+      const token = await refreshAccessToken();
+      if (!cancelled && token) {
+        const profile = await getMyProfile(token).catch(() => null);
+        if (!cancelled && profile) {
+          setUser({
+            user_id: profile.user_id,
+            email: profile.email,
+            role: profile.role,
+            username: profile.username,
+            status: profile.status,
+          });
         }
-
-        const body = await res.json().catch(() => null) as {
-          access_token?: string;
-          expires_in?: number;
-        } | null;
-
-        if (!cancelled && body?.access_token) {
-          const token = body.access_token;
-          setAccessTokenState(token);
-
-          // Populate user info so role-based UI (Navbar) works after reload/tab.
-          // The refresh-token BFF does not return user info.
-          const profile = await getMyProfile(token).catch(() => null);
-          if (!cancelled && profile) {
-            setUser({
-              user_id: profile.user_id,
-              email: profile.email,
-              role: profile.role,
-              username: profile.username,
-              status: profile.status,
-            });
-          }
-        }
-      } catch {
-        // Network error or BFF unavailable — fail silently.
-      } finally {
-        if (!cancelled) setIsLoading(false);
       }
+      if (!cancelled) setIsLoading(false);
     }
 
     tryRestoreSession();
@@ -154,7 +156,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshAccessToken]);
+
+  // -------------------------------------------------------------------------
+  // Proactive periodic refresh — keeps the in-memory token and HttpOnly
+  // cookie fresh before expiry (15 min default) so the refresh endpoint
+  // never receives an already-expired token.
+  //
+  // Runs every 10 minutes when the user has a valid session.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const intervalId = setInterval(() => {
+      refreshAccessToken();
+    }, 600_000);
+
+    return () => clearInterval(intervalId);
+  }, [accessToken, refreshAccessToken]);
 
   // -------------------------------------------------------------------------
   // Context value — memoised to avoid unnecessary re-renders

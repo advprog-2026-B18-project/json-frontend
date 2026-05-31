@@ -240,7 +240,7 @@ export default function CheckoutPage() {
     setSubmitting(true);
     try {
       const order = await createOrder(accessToken, {
-        product_id: product.productId,
+        product_id: productId,
         quantity,
         shipping_address: {
           recipient_name: shipping.recipient_name.trim(),
