@@ -3,9 +3,9 @@
 /**
  * TASK-317: /checkout/[productId] — Order form page
  *
- * Only accessible to authenticated TITIPERS.
+ * Only accessible to authenticated users (TITIPERS or JASTIPER).
  * Redirects to /login if unauthenticated.
- * Redirects to /catalog if user is JASTIPER or ADMIN.
+ * Redirects to /catalog if user is ADMIN.
  *
  * Features:
  * - Product summary (name, price, serviceFee, stock)
@@ -25,6 +25,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -162,7 +163,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (user?.role === 'JASTIPER' || user?.role === 'ADMIN') {
+    if (user?.role === 'ADMIN') {
       router.replace('/catalog');
     }
   }, [authLoading, accessToken, user, router, productId]);
@@ -173,7 +174,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!accessToken) return;
-    if (user?.role === 'JASTIPER' || user?.role === 'ADMIN') return;
+    if (user?.role === 'ADMIN') return;
 
     setDataLoading(true);
     setDataError(null);
@@ -337,16 +338,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white">Katalog</Link>
-            <span className="text-sm text-white/80">{user?.username ?? user?.email}</span>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
         {/* Back link */}
