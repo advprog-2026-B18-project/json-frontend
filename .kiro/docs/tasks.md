@@ -14,6 +14,7 @@
 
 ### Phase 2: Service Layer Base
 - [x] TASK-009: Implement src/services/api-client.ts with apiFetchFrom, authFetch, paymentFetch, inventoryFetch, ordersFetch, appFetch, ApiError class, and isApiError type guard | Est: 2h
+- [x] TASK-009-FIX: Fix CORS issue in api-client.ts — replaced direct `getEnv()` (always backend URL) with `serviceBaseUrl()` dual approach: client-side uses proxy path (`/api/inventory` via Next.js rewrites), server-side uses direct env var URL | Est: 0.5h
 - [x] TASK-010: Implement dual error normalization in api-client.ts: handle both { success, message } envelope (Auth/Inventory/Order) and RFC 9457 Problem Details (Payment) into unified ApiError shape | Est: 1.5h
 
 ### Phase 3: BFF Route Handlers
@@ -29,7 +30,7 @@
 - [x] TASK-101: Define TypeScript types for Auth Service responses: LoginResponse, RegisterResponse, ProfileResponse, PublicProfileResponse, KYCStatusResponse, AdminUserListResponse, AdminKYCListResponse. NOTE: LoginResponse token field is `data.refresh_token` (not `access_token`) — this is the access token despite the field name. AdminUserListResponse pagination shape is `{ page, limit, total }` — no `total_pages` field in auth service pagination. | Est: 1h
 
 ### Phase 2: Service Layer
-- [x] TASK-102: Implement src/services/auth.service.ts — register(email, password, passwordConfirmation, role) | Est: 0.5h
+- [x] TASK-102: Implement src/services/auth.service.ts — register({ email, password, password_confirmation, role }) — NOTE: takes an options object with role ("TITIPERS" | "JASTIPER"), all fields snake_case | Est: 0.5h
 - [x] TASK-103: Implement auth.service.ts — login(email, password) via BFF /api/auth/login. NOTE: read the access token from `data.refresh_token` field in the response (backend naming quirk). | Est: 0.5h
 - [x] TASK-104: Implement auth.service.ts — logout() via BFF /api/auth/logout | Est: 0.5h
 - [x] TASK-105: Implement auth.service.ts — refreshToken() via BFF /api/auth/refresh-token | Est: 0.5h
@@ -48,16 +49,18 @@
 - [x] TASK-116: Implement AuthProvider context (src/lib/auth/AuthProvider.tsx) with accessToken state, setAccessToken, clearAuth, and auto-refresh on mount | Est: 2h
 
 ### Phase 4: Frontend Pages and Components
-- [x] TASK-117: Build /login page (src/app/login/page.tsx) — email/password form, React 19 form action, role-based redirect on success | Est: 2h
+- [x] TASK-117: Build /login page (src/app/login/page.tsx) — email/password form, React 19 form action, role-based redirect on success, supports `?redirect=` query param. Redirects: /dashboard (TITIPERS), /jastiper/dashboard (JASTIPER), /admin/catalog (ADMIN) | Est: 2h
 - [x] TASK-118: Build /register page (src/app/register/page.tsx) — role selector, registration form, per-field validation errors | Est: 2h
 - [x] TASK-119: Build /profile page (src/app/profile/page.tsx) — profile edit form, username validation, KYC status link | Est: 2h
 - [x] TASK-120: Build /profile/kyc page (src/app/profile/kyc/page.tsx) — KYC submission form with dynamic social_media_links, ktp_number 16-digit validation | Est: 3h
 - [x] TASK-121: Build /jastiper/[username] public profile page (src/app/jastiper/[username]/page.tsx) — profile header, stats, badges, product catalog | Est: 3h
+- [x] TASK-121b: Build /profile/[username] public profile page (src/app/profile/[username]/page.tsx) — simpler card-based profile for any user role, with jastiper stats section if applicable | Est: 1h
 - [x] TASK-122: Build /admin/users page (src/app/admin/users/page.tsx) — user table with filters, ban/unban actions | Est: 3h
 - [x] TASK-123: Build /admin/users/[userId] page (src/app/admin/users/[userId]/page.tsx) — full user detail with KYC info and stats | Est: 2h
 - [x] TASK-124: Build /admin/kyc page (src/app/admin/kyc/page.tsx) — KYC queue with review modal, approve/reject actions | Est: 3h
 
 ### Phase 5: Integration and Testing
+- [x] TASK-125-FIX: Fix AuthProvider to restore user state after page refresh — after successful token refresh, fetch /profile/me to populate the `user` context so Navbar doesn't show "Masuk/Daftar". LATER REVERSED: The refresh-token BFF does not return user info, and no `getMyProfile` call was added after refresh. The `user` context remains null after page refresh — it is only populated on explicit login via `setAccessToken(token, user)`. The Navbar handles this by not rendering user-specific links until `user` is non-null. | Est: 0.5h
 - [ ] TASK-125: Test login flow end-to-end: login, token stored in context, auto-refresh on 401, logout clears cookie | Est: 2h
 - [ ] TASK-126: Test KYC submission and admin review flow end-to-end | Est: 1h
 - [ ] TASK-127: Verify rejection-reason hyphen field name is sent correctly in KYC review request | Est: 0.5h
@@ -99,6 +102,7 @@
 - [ ] TASK-224: Test product search with all filter combinations | Est: 1h
 - [ ] TASK-225: Test product creation and update with camelCase/snake_case field handling | Est: 1h
 - [ ] TASK-226: Test admin moderation actions (HIDE, REMOVE, RESTORE, ACTIVATE) | Est: 1h
+- [x] TASK-219-FIX-1: Fix RuntimeError "Cannot read properties of undefined (reading 'split')" on /catalog/[productId] — added `normalizeProduct()` to map snake_case (purchase_date, origin_country, etc.) to camelCase ProductResponse fields at fetch time; made `formatDate()` accept null/undefined | Est: 0.5h
 
 ---
 
@@ -125,7 +129,7 @@
 - [x] TASK-316: Implement order.service.ts — getProductRating(orderId) GET /orders/{order_id}/rating/product | Est: 0.5h
 
 ### Phase 4: Frontend Pages and Components
-- [x] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: Use camelCase ProductResponse fields for price display (`product.price`, `product.serviceFee`, `product.stock`, `product.productId`) since ProductResponse from GET /products/{id} uses camelCase. | Est: 4h
+- [x] TASK-317: Build /checkout/[productId] page (src/app/checkout/[productId]/page.tsx) — order form with shipping address, wallet balance check, quantity selector. NOTE: ProductResponse from backend actually uses snake_case (`product_id`, `service_fee`), so `product.productId` is undefined. Fix: use `productId` from URL params directly for `product_id` field, and normalize product after fetch to map `service_fee` → `serviceFee`. | Est: 4h
 - [x] TASK-318: Build /orders page (src/app/orders/page.tsx) — purchase history with status filter tabs, pagination | Est: 2h
 - [x] TASK-319: Build /orders/[orderId] page (src/app/orders/[orderId]/page.tsx) — order detail with status timeline, action buttons, rating forms | Est: 4h
 - [x] TASK-320: Build /jastiper/orders page (src/app/jastiper/orders/page.tsx) — incoming orders with action buttons | Est: 3h
@@ -137,6 +141,23 @@
 - [ ] TASK-324: Test full order lifecycle: checkout → pay → purchased → shipped → completed → rate | Est: 2h
 - [ ] TASK-325: Test cancellation flows: PENDING→CANCELLED, PAID→REFUNDING→CANCELLED, SHIPPED→REFUNDING (ADMIN only) | Est: 2h
 - [ ] TASK-326: Test invalid status transitions return 422 with valid_transitions in response | Est: 1h
+- [x] TASK-ORDER-FIX: Fix double-unwrapping bug in ALL `order.service.ts` functions — `apiRequest` already unwraps the `data` field from the envelope response, so `const response = await orderRequest<XxxResponse>(...); return response.data;` returns `undefined`. Fixed all 16 functions to call `orderRequest` with the inner data type directly and return the result without `.data`. | Est: 1h
+- [x] TASK-317-FIX-1: Fix checkout page — normalizes product response (snake_case → camelCase) after fetch so `serviceFee`, `productId` etc. are defined; uses `productId` URL param directly instead of `product.productId` for the order creation request body | Est: 0.5h
+- [x] TASK-ORDER-FIX: Fix double-unwrapping bug in ALL `order.service.ts` functions — `apiRequest` already unwraps the `data` field from the envelope response, so `const response = await orderRequest<XxxResponse>(...); return response.data;` returns `undefined`. Fixed all 16 functions to call `orderRequest` with the inner data type directly and return the result without `.data`. | Est: 1h
+- [x] TASK-327: Make product card clickable on order detail page (`/orders/[orderId]`) — product name/image links to `/catalog/[productId]` via Next.js Link. The entire product info row is wrapped in a Link component with hover effect. | Est: 0.5h
+- [x] TASK-328: Fetch and display rich jastiper info on buyer order detail page — `getProduct(order.product_id)` is called after order load to fetch `ProductJastiper` (userId, username, fullName, profilePictureUrl, avgRating, totalOrders). Displays profile picture/initial avatar, username link to `/jastiper/[username]`, full name, rating stars, and total order count. Falls back to truncated ID if product fetch fails. LATER SIMPLIFIED: Rich jastiper info was removed from `/orders/[orderId]`. Now only the raw `{order.jastiper_id}` is displayed as plain text — no profile fetch, no avatar, no link. | Est: 1h
+- [x] TASK-329: Fix jastiper ratings not showing on `/jastiper/[username]` page — backend `GET /jastipers/{jastiperId}/ratings` returns `{ ratings, page, limit, total, average_rating }` but frontend `getJastiperRatings` was typed to expect `{ data, pagination }`. Fixed by mapping the raw response in `order.service.ts` to match `JastiperRatingListResponse`. | Est: 0.5h
+- [x] TASK-330: Fix success rate always 0% on jastiper profile — order service's `send_jastiper_rating` was sending `{ order_id, rating }` without `is_completed` field. Auth service's `updateRating` only increments `completedOrders` when `is_completed == true`. Added `"is_completed": true` to the payload in `json-order-service/src/services/implements/auth_client_impl.rs`. | Est: 0.5h
+- [x] TASK-331: Fix `totalReviews` incrementing on order confirmation instead of rating submission — inventory service's `StockManagementServiceImpl.handleConfirmAction` unconditionally incremented `totalReviews` for every CONFIRM action. Moved `totalReviews++` and `calculateNewRating` into the rating block so `totalReviews` only increments when a rating is provided. Updated existing tests that expected `totalReviews` to remain null. | Est: 0.5h
+- [x] TASK-332: Fix stale/empty jastiper data on catalog and order detail pages — inventory service's `enrichProductResponse` used wrong key `"avg_rating"` (should be `"rating"`) and never read `total_orders` from auth profile response (it's nested inside `"stats"`). Fixed both `ProductServiceImpl` and `AdminProductServiceImpl`. Updated tests to match real auth response shape. | Est: 1h
+- [x] TASK-333: Fix success rate > 100% on jastiper profile page — auth service already returns `success_rate` as a percentage (0–100), but frontend multiplied by 100 again (`success_rate * 100`), turning e.g. 66.7% into 6670%. Removed the extra multiplication. | Est: 0.5h
+- [x] TASK-334: Add waiting context messages to order timeline — TITIPERS: PAID shows "Dibayar — Menunggu dibeli jastiper", PURCHASED shows "Dibeli Jastiper — Menunggu dikirim". JASTIPER: PENDING shows "Menunggu dibayar titipers", SHIPPED shows "Dikirim — Menunggu konfirmasi titipers". LATER SIMPLIFIED: Both TITIPERS and JASTIPER order detail pages now use simple labels without waiting context: PENDING ("Menunggu Pembayaran"), PAID ("Dibayar"), PURCHASED ("Dibeli Jastiper"), SHIPPED ("Dikirim"), COMPLETED ("Selesai"). | Est: 0.5h
+- [x] TASK-335: Redirect to /dashboard after profile save — after successful PATCH /profile/me, show success toast for 1.5s then router.push('/dashboard') | Est: 0.25h
+- [x] TASK-336: Check profile completeness before KYC form — on /profile/kyc page load, fetch profile via GET /profile/me; redirect to /profile if username or full_name is empty | Est: 0.5h
+- [x] TASK-337: Add Navbar to KYC page — wrap /profile/kyc page in consistent layout with Navbar for theme consistency | Est: 0.25h
+- [x] TASK-338: Replace custom header with Navbar on jastiper catalog — /jastiper/catalog had a plain <span> for username (not clickable); replaced with shared Navbar component which has the user dropdown with logout | Est: 0.5h
+- [x] TASK-339: Make product and buyer clickable on jastiper order detail — product card wraps in Link to /catalog/[productId]; buyer section fetches profile via getPublicProfileById and displays avatar, full_name, and @username. LATER SIMPLIFIED: Product card is NOT clickable on `/jastiper/orders/[orderId]` (plain text, no Link). Buyer info shows only raw `{order.titipers_id}` — no profile fetch, no avatar, no username. | Est: 0.5h
+- [x] TASK-340: Add getPublicProfileById to auth.service.ts — implements GET /profile/id/{id} public endpoint for fetching profile by UUID. STILL EXISTS: Used in `/admin/orders/[orderId]` to fetch both jastiper and titiper profile info for display. Not used in jastiper or titiper order detail pages. | Est: 0.25h
 
 ---
 
@@ -168,7 +189,7 @@
 - [x] TASK-419: ⚠️ CONCURRENCY: Implement wallet balance pre-check for the "Bayar Sekarang" button on the order detail page (/orders/[orderId]) — fetch GET /wallets/me and compare balance to order total_price before enabling the pay button. NOTE: This check is on the ORDER DETAIL page, not the checkout form submission. The checkout page (POST /orders) creates the order first; the pay button appears on the subsequent order detail page. | Est: 1h
 
 ### Phase 4: Frontend Pages and Components
-- [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up form, transaction history with filter tabs | Est: 4h
+- [x] TASK-420: Build /wallet page (src/app/wallet/page.tsx) — wallet balance, top-up modal (+ Top-Up), withdraw modal (− Withdraw) with amount/bank_account_id/notes fields, transaction history with filter tabs | Est: 5h
 - [x] TASK-421: Build /jastiper/wallet page (src/app/jastiper/wallet/page.tsx) — wallet balance, withdrawal form, earnings history | Est: 3h
 - [ ] TASK-422a: Build /admin/wallet/summary page (src/app/admin/wallet/summary/page.tsx) — platform financial summary cards: total_topup, total_withdrawal, total_payment, total_refund, total_earning, platform_escrow_balance; fetched from GET /admin/transactions summary field | Est: 2h
 - [ ] TASK-422b: Build /admin/wallet/requests page (src/app/admin/wallet/requests/page.tsx) — pending top-up requests list with Approve/Reject actions (PATCH /admin/topups/{id}), pending withdrawal requests list with Approve/Reject actions (PATCH /admin/withdrawals/{id}); reject opens modal for rejection_reason | Est: 2h
@@ -206,8 +227,8 @@
 
 ### Phase 5: Integration and Testing
 - [x] TASK-518: Build /dashboard page (src/app/dashboard/page.tsx) — titiper dashboard with stats, wallet, recent orders, KYC banner | Est: 3h
-- [x] TASK-519: Build /jastiper/dashboard page (src/app/jastiper/dashboard/page.tsx) — jastiper dashboard with sales stats, wallet, incoming orders | Est: 3h
-- [ ] TASK-520: Build /admin/dashboard page (src/app/admin/dashboard/page.tsx) — platform stats, pending actions, financial summary | Est: 3h
+- [x] TASK-519: Build /jastiper/dashboard page (src/app/jastiper/dashboard/page.tsx) — jastiper dashboard with 3 clickable OrderStatCard components (To-Do List → ?status=PAID, Sedang Diproses → ?status=PURCHASED, Selesai → ?status=COMPLETED), wallet gradient hero card, recent orders table, quick links | Est: 3h
+- [x] TASK-520: Build /admin/dashboard page (src/app/admin/dashboard/page.tsx) — platform stats, pending actions (KYC, top-ups, withdrawals), financial summary, recent orders | Est: 3h
 - [ ] TASK-523: Integration test: verify all pages render correctly with loading, empty, and error states | Est: 3h
 - [ ] TASK-524: Accessibility audit: verify all interactive components have proper aria labels, roles, and keyboard navigation | Est: 2h
 - [ ] TASK-525: Cross-browser test: verify layout and functionality in Chrome, Firefox, Safari | Est: 2h

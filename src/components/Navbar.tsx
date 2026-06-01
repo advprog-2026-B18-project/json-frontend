@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useAuthorizedFetch } from '@/lib/api/useAuthorizedFetch';
 import type { WalletResponse } from '@/services/payment.service';
+import { logout as apiLogout } from '@/services/auth.service';
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -52,13 +53,22 @@ export function Navbar() {
 
   const handleLogout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch {
-      // Continue locally
+      if (accessToken) {
+        await apiLogout(accessToken);
+      }
+    } catch (err) {
+      console.error('Logout integration with BFF failed:', err);
     }
+
     clearAuth();
-    router.push('/login');
-  }, [clearAuth, router]);
+
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+
+    window.location.href = '/login';
+  }, [accessToken, clearAuth]);
 
   if (authLoading) {
     return (
@@ -123,9 +133,10 @@ export function Navbar() {
                   {user.role === 'JASTIPER' && (
                       <>
                         <Link href="/jastiper/dashboard" className={getLinkClass('/jastiper/dashboard')}>Dashboard</Link>
+                        <Link href="/catalog" className={getLinkClass('/catalog')}>Katalog</Link>
                         <Link href="/jastiper/catalog" className={getLinkClass('/jastiper/catalog')}>Katalog Saya</Link>
                         <Link href="/jastiper/orders" className={getLinkClass('/jastiper/orders')}>Kelola Pesanan</Link>
-                        <Link href="/jastiper/wallet" className={getLinkClass('/jastiper/wallet')}>Dompet</Link>
+                        <Link href="/wallet" className={getLinkClass('/wallet')}>Dompet</Link>
                       </>
                   )}
 
@@ -149,7 +160,6 @@ export function Navbar() {
           <div className="flex-1 flex items-center justify-end gap-3">
             {accessToken && user ? (
                 <>
-                  {/* Wallet Balance Widget (Sembunyikan untuk Admin) */}
                   {user.role !== 'ADMIN' && (
                       <button
                           onClick={fetchBalance}
@@ -165,7 +175,7 @@ export function Navbar() {
                       </button>
                   )}
 
-                  {/* User Account Dropdown Selector */}
+                  {/* User dropdown */}
                   <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setShowDropdown((prev) => !prev)}
@@ -205,7 +215,6 @@ export function Navbar() {
                   </div>
                 </>
             ) : (
-                /* Tombol Masuk/Daftar untuk Guest */
                 <div className="hidden md:flex items-center gap-3">
                   <Link href="/login" className="text-sm text-white/80 hover:text-white transition">
                     Masuk
@@ -233,7 +242,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile View Dropdown Menu Sheet Container Container */}
+        {/* Mobile View Dropdown Menu Container */}
         {showMobileMenu && (
             <div className="border-t border-white/10 bg-primary-dark px-4 py-3 md:hidden space-y-1 animate-in slide-in-from-top duration-200">
               {accessToken && user ? (
@@ -254,9 +263,10 @@ export function Navbar() {
                     {user.role === 'JASTIPER' && (
                         <>
                           <Link href="/jastiper/dashboard" className={getMobileLinkClass('/jastiper/dashboard')} onClick={() => setShowMobileMenu(false)}>Dashboard</Link>
+                          <Link href="/catalog" className={getMobileLinkClass('/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog</Link>
                           <Link href="/jastiper/catalog" className={getMobileLinkClass('/jastiper/catalog')} onClick={() => setShowMobileMenu(false)}>Katalog Saya</Link>
                           <Link href="/jastiper/orders" className={getMobileLinkClass('/jastiper/orders')} onClick={() => setShowMobileMenu(false)}>Kelola Pesanan</Link>
-                          <Link href="/jastiper/wallet" className={getMobileLinkClass('/jastiper/wallet')} onClick={() => setShowMobileMenu(false)}>Dompet</Link>
+                          <Link href="/wallet" className={getMobileLinkClass('/wallet')} onClick={() => setShowMobileMenu(false)}>Dompet</Link>
                         </>
                     )}
 
@@ -278,7 +288,6 @@ export function Navbar() {
                     </button>
                   </>
               ) : (
-                  /* Mobile view links pembeli dan jastiper unauthenticated */
                   <div className="pt-1 flex flex-col gap-2">
                     <Link href="/catalog" className="block text-sm text-white/80 py-2 px-3 hover:bg-white/10 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                       Katalog Publik

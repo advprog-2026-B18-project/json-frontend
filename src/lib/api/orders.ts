@@ -176,6 +176,7 @@ export interface CreateOrderRequest {
   quantity: number; // Min 1
   shipping_address: ShippingAddress;
   note_to_jastiper?: string | null; // Max 500 chars
+  idempotency_key?: string; // UUID v4 — prevents double submit
 }
 
 /**
@@ -279,7 +280,13 @@ export interface GetOrderHistoryResponse {
 export interface GetMyPurchasesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -289,7 +296,13 @@ export interface GetMyPurchasesResponse {
 export interface GetMySalesResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**
@@ -386,7 +399,13 @@ export interface InvalidStatusTransitionError {
 export interface GetAdminOrdersResponse {
   success: boolean;
   message: string;
-  data: PaginatedOrderResponse;
+  data: Order[];
+  pagination: {
+    total_items: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
 }
 
 /**

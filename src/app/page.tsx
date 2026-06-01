@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { Navbar } from '@/components/Navbar';
 import { searchProducts, getCategories } from '@/services/inventory.service';
 import type { ProductResponse, CategoryResponse, ProductJastiper } from '@/services/inventory.service';
 
@@ -21,7 +22,7 @@ function formatRupiah(amount: number) {
 // ---------------------------------------------------------------------------
 // RatingStars
 // ---------------------------------------------------------------------------
-function RatingStars({ rating = 0 }: { rating?: number }) {
+function RatingStars({ rating = 0 }: { rating?: number | null }) {
   const safeRating = rating ?? 0;
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -45,9 +46,13 @@ function RatingStars({ rating = 0 }: { rating?: number }) {
 // ---------------------------------------------------------------------------
 function ProductCard({ product }: { product: ProductResponse }) {
   const p = product as any;
-  const productId = p.productId || p.product_id;
+  const productId = p.productId ?? p.product_id;
+  const name = p.name;
+  const price = p.price ?? p.harga ?? 0;
+  const images: string[] = p.images ?? [];
   const avgRating = p.stats?.avgRating ?? p.stats?.avg_rating ?? 0;
-  const images = p.images ?? [];
+
+  if (!productId) return null;
 
   return (
     <Link
@@ -59,7 +64,7 @@ function ProductCard({ product }: { product: ProductResponse }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={images[0]}
-            alt={p.name}
+            alt={name}
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
@@ -71,8 +76,8 @@ function ProductCard({ product }: { product: ProductResponse }) {
         )}
       </div>
       <div className="p-3">
-        <p className="text-xs font-medium text-gray-800 line-clamp-2 mb-1">{p.name}</p>
-        <p className="text-sm font-bold text-(--color-primary-dark)">{formatRupiah(p.price)}</p>
+        <p className="text-xs font-medium text-gray-800 line-clamp-2 mb-1">{name}</p>
+        <p className="text-sm font-bold text-primary-dark">{formatRupiah(price)}</p>
         {avgRating > 0 && (
           <div className="mt-1">
             <RatingStars rating={avgRating} />
@@ -103,11 +108,11 @@ function ProductCardSkeleton() {
 // JastiperCard
 // ---------------------------------------------------------------------------
 function JastiperCard({ jastiper }: { jastiper: ProductJastiper }) {
-  const js = jastiper as any;
-  const username = js.username;
-  const avgRating = js.avgRating ?? js.avg_rating ?? 0;
-  const totalOrders = js.totalOrders ?? js.total_orders ?? 0;
-  const profilePictureUrl = js.profilePictureUrl || js.profile_picture_url;
+  const j = jastiper as any;
+  const username = j.username;
+  const profilePictureUrl = j.profilePictureUrl ?? j.profile_picture_url ?? null;
+  const avgRating = j.avgRating ?? j.avg_rating ?? 0;
+  const totalOrders = j.totalOrders ?? j.total_orders ?? 0;
 
   if (!username) return null;
   return (
@@ -120,10 +125,10 @@ function JastiperCard({ jastiper }: { jastiper: ProductJastiper }) {
         <img
           src={profilePictureUrl}
           alt={username}
-          className="h-14 w-14 rounded-full object-cover border-2 border-(--color-primary)"
+          className="h-14 w-14 rounded-full object-cover border-2 border-primary"
         />
       ) : (
-        <div className="h-14 w-14 rounded-full bg-(--color-primary) flex items-center justify-center text-white text-xl font-bold">
+        <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-white text-xl font-bold">
           {username[0].toUpperCase()}
         </div>
       )}
@@ -149,14 +154,13 @@ export default function LandingPage() {
     const seen = new Set<string>();
     const result: ProductJastiper[] = [];
     for (const p of products) {
-      const js = p.jastiper as any;
-      if (!js) continue;
-      const uId = js.userId || js.user_id;
-      const uname = js.username;
-      
+      const j = p.jastiper as any;
+      if (!j) continue;
+      const uId = j.userId ?? j.user_id;
+      const uname = j.username;
       if (uname && uId && !seen.has(uId)) {
         seen.add(uId);
-        result.push(js);
+        result.push(j);
         if (result.length >= 6) break;
       }
     }
@@ -172,7 +176,7 @@ export default function LandingPage() {
     setProductsError(false);
 
     searchProducts({ limit: 8, sortBy: 'rating', order: 'desc' })
-      .then((data) => { if (!cancelled) setProducts(data.data); })
+      .then((data) => { if (!cancelled) setProducts(data.data || []); })
       .catch(() => { if (!cancelled) setProductsError(true); })
       .finally(() => { if (!cancelled) setProductsLoading(false); });
 
@@ -187,7 +191,7 @@ export default function LandingPage() {
     setCategoriesLoading(true);
 
     getCategories()
-      .then((data) => { if (!cancelled) setCategories(data); })
+      .then((data) => { if (!cancelled) setCategories(data || []); })
       .catch(() => { /* silently ignore */ })
       .finally(() => { if (!cancelled) setCategoriesLoading(false); });
 
@@ -197,42 +201,16 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Navbar                                                             */}
-      {/* ------------------------------------------------------------------ */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white tracking-tight">
-            JSON
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white transition">
-              Katalog
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white hover:bg-white/10 transition"
-            >
-              Masuk
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100 transition"
-            >
-              Daftar
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* ------------------------------------------------------------------ */}
-      {/* 1. Hero Section                                                    */}
+      {/* 1. Hero Section                                                      */}
       {/* ------------------------------------------------------------------ */}
-      <section className="bg-linear-to-br from-(--color-primary-dark) to-(--color-primary) px-4 py-20 text-center text-white">
+      <section className="bg-linear-to-br from-primary-dark to-primary px-4 py-20 text-center text-white">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
           Jastip Online Nasional,
           <br />
-          <span className="text-(--color-secondary-light)">Mudah dan Terpercaya</span>
+          <span className="text-secondary-light">Mudah dan Terpercaya</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-white/80">
           Temukan produk jastip pilihan dari Jastiper terpercaya di seluruh Indonesia.
@@ -240,7 +218,7 @@ export default function LandingPage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/catalog"
-            className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-(--color-primary-dark) shadow-md hover:bg-gray-100 transition"
+            className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary-dark shadow-md hover:bg-gray-100 transition"
           >
             Mulai Belanja
           </Link>
@@ -254,12 +232,12 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 2. Featured Products                                               */}
+      {/* 2. Featured Products                                                 */}
       {/* ------------------------------------------------------------------ */}
       <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">Produk Unggulan</h2>
-          <Link href="/catalog" className="text-sm text-(--color-primary) hover:underline">
+          <Link href="/catalog" className="text-sm text-primary hover:underline">
             Lihat semua →
           </Link>
         </div>
@@ -275,7 +253,7 @@ export default function LandingPage() {
                 <p className="text-sm text-gray-500 py-8">Belum ada produk tersedia.</p>
               )
               : products.map((p) => {
-                  const id = p.productId || (p as any).product_id;
+                  const id = (p as any).productId ?? (p as any).product_id;
                   return <ProductCard key={id} product={p} />;
                 })
             }
@@ -284,7 +262,7 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. How It Works                                                    */}
+      {/* 3. How It Works                                                      */}
       {/* ------------------------------------------------------------------ */}
       <section className="bg-white px-4 py-14">
         <div className="mx-auto max-w-4xl">
@@ -323,10 +301,10 @@ export default function LandingPage() {
               },
             ].map(({ icon, step, title, desc }) => (
               <div key={step} className="flex flex-col items-center text-center gap-3">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary)">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                   {icon}
                 </div>
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-(--color-primary) text-xs font-bold text-white">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                   {step}
                 </div>
                 <h3 className="font-semibold text-gray-800">{title}</h3>
@@ -338,11 +316,11 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 4. Top Jastipers                                                   */}
+      {/* 4. Top Jastipers                                                     */}
       {/* ------------------------------------------------------------------ */}
       {(productsLoading || topJastipers.length > 0) && (
         <section className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="mb-5 text-xl font-bold text-gray-900">Jastiper Terpopuler</h2>
+          <h2 className="mb-5 text-xl font-bold text-gray-900">Jastiper Terunggul</h2>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {productsLoading
               ? Array.from({ length: 6 }).map((_, i) => (
@@ -353,7 +331,7 @@ export default function LandingPage() {
                   </div>
                 ))
               : topJastipers.map((j) => {
-                  const id = j.userId || (j as any).user_id;
+                  const id = (j as any).userId ?? (j as any).user_id;
                   return <JastiperCard key={id} jastiper={j} />;
                 })
             }
@@ -362,7 +340,7 @@ export default function LandingPage() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 5. Category Quick Links                                            */}
+      {/* 5. Category Quick Links                                              */}
       {/* ------------------------------------------------------------------ */}
       <section className="bg-white px-4 py-12">
         <div className="mx-auto max-w-6xl">
@@ -376,7 +354,7 @@ export default function LandingPage() {
                   <Link
                     key={cat.category_id}
                     href={`/catalog?categoryId=${cat.category_id}`}
-                    className="rounded-full border border-(--color-primary)/30 bg-(--color-primary)/5 px-4 py-1.5 text-sm font-medium text-(--color-primary-dark) hover:bg-(--color-primary)/15 transition"
+                    className="rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-dark hover:bg-primary/15 transition"
                   >
                     {cat.name}
                     {cat.product_count > 0 && (
@@ -390,9 +368,9 @@ export default function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 6. Footer                                                          */}
+      {/* 6. Footer                                                            */}
       {/* ------------------------------------------------------------------ */}
-      <footer className="bg-(--color-primary-dark) px-4 py-10 text-white">
+      <footer className="bg-primary-dark px-4 py-10 text-white">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>

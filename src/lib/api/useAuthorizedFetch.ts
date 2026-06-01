@@ -77,50 +77,49 @@ export function useAuthorizedFetch() {
   }, [clearAuth, router, setAccessToken]);
 
   /**
-   * Make an authenticated request to a backend service with loop protection.
+   * Make an authenticated request to a backend service.
+   *
+   * @param service  - Which backend service to call ('auth' | 'inventory' | 'orders' | 'payment')
+   * @param path     - Endpoint path, e.g. '/profile/me'
+   * @param options  - Optional method, body, and extra headers
+   *
+   * Automatically attaches `Authorization: Bearer <token>` and retries once
+   * on 401 after refreshing the token.
    */
   const authorizedFetch = useCallback(
-      async <T,>(
-          service: AuthorizedService,
-          path: string,
-          options: ServiceRequestOptions = {},
-          isRetry = false
-      ): Promise<T> => {
-        const requestFnMap = {
-          auth: authRequest,
-          inventory: inventoryRequest,
-          orders: orderRequest,
-          payment: paymentRequest,
-        } as const;
+    async <T,>(
+      service: AuthorizedService,
+      path: string,
+      options: ServiceRequestOptions = {}
+    ): Promise<T> => {
+      // Map service name to the correct request function
+      const requestFnMap = {
+        auth: authRequest,
+        inventory: inventoryRequest,
+        orders: orderRequest,
+        payment: paymentRequest,
+      } as const;
 
-        const requestFn = requestFnMap[service] as typeof authRequest;
+      const requestFn = requestFnMap[service] as typeof authRequest;
 
-        const doRequest = (token: string | null) =>
-            requestFn<T>(path, { ...options, token: token ?? undefined });
+      const doRequest = (token: string | null) =>
+        requestFn<T>(path, { ...options, token: token ?? undefined });
 
-        try {
-          return await doRequest(accessToken);
-        } catch (error) {
-          if (isApiError(error) && error.status === 401) {
-
-            if (isRetry) {
-              console.error(`🔒 Security Guard: Token refresh loop detected for path ${path}. Forcing logout.`);
-              clearAuth();
-              router.push('/login');
-              throw error;
-            }
-
-            const nextToken = await refreshAccessToken();
-            if (!nextToken) {
-              throw error;
-            }
-
-            return authorizedFetch<T>(service, path, options, true);
+      try {
+        return await doRequest(accessToken);
+      } catch (error) {
+        if (isApiError(error) && error.status === 401) {
+          const nextToken = await refreshAccessToken();
+          if (!nextToken) {
+            // Refresh failed — re-throw the original 401 so callers can handle it
+            throw error;
           }
-          throw error;
+          return doRequest(nextToken);
         }
-      },
-      [accessToken, refreshAccessToken, clearAuth, router]
+        throw error;
+      }
+    },
+    [accessToken, refreshAccessToken]
   );
 
   return { authorizedFetch, accessToken };

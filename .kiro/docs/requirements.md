@@ -182,7 +182,7 @@
   - Acceptance Criteria: After admin approval via PATCH /admin/topups/{transaction_id} with action=APPROVE, the user's wallet balance increases by the top-up amount and the transaction status becomes SUCCESS. Rejecting with action=REJECT and a rejection_reason sets the transaction to FAILED/CANCELLED without crediting the balance.
   - Priority: MUST
 
-- **FR-WAL-4**: JASTIPER can request a withdrawal by providing amount, bank_account_id, idempotency_key, and notes (all required).
+- **FR-WAL-4**: TITIPERS and JASTIPER can request a withdrawal by providing amount, bank_account_id, idempotency_key, and notes (all required).
   - Acceptance Criteria: A POST to /withdrawals with all four required fields returns HTTP 200 with a PENDING transaction. The amount is immediately deducted from the wallet balance. Insufficient balance returns HTTP 422 with balance and required fields. A duplicate idempotency_key returns HTTP 409.
   - Priority: MUST
 

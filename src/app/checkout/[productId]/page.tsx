@@ -3,9 +3,9 @@
 /**
  * TASK-317: /checkout/[productId] — Order form page
  *
- * Only accessible to authenticated TITIPERS.
+ * Only accessible to authenticated users (TITIPERS or JASTIPER).
  * Redirects to /login if unauthenticated.
- * Redirects to /catalog if user is JASTIPER or ADMIN.
+ * Redirects to /catalog if user is ADMIN.
  *
  * Features:
  * - Product summary (name, price, serviceFee, stock)
@@ -20,10 +20,12 @@ import { getProduct, isApiError } from '@/services/inventory.service';
 import type { ProductResponse } from '@/services/inventory.service';
 import { getWallet } from '@/services/payment.service';
 import { createOrder } from '@/services/order.service';
+import type { CreateOrderRequest } from '@/lib/api/orders';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -144,6 +146,12 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Idempotency key — generated once per page load
+  const idempotencyKey = useRef<string | null>(null);
+  useEffect(() => {
+    idempotencyKey.current = crypto.randomUUID();
+  }, []);
+
   // ---------------------------------------------------------------------------
   // Auth guard — redirect after auth resolves
   // ---------------------------------------------------------------------------
@@ -155,7 +163,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (user?.role === 'JASTIPER' || user?.role === 'ADMIN') {
+    if (user?.role === 'ADMIN') {
       router.replace('/catalog');
     }
   }, [authLoading, accessToken, user, router, productId]);
@@ -166,7 +174,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!accessToken) return;
-    if (user?.role === 'JASTIPER' || user?.role === 'ADMIN') return;
+    if (user?.role === 'ADMIN') return;
 
     setDataLoading(true);
     setDataError(null);
@@ -239,8 +247,8 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const order = await createOrder(accessToken, {
-        product_id: product.productId,
+      const body: CreateOrderRequest & { idempotency_key?: string } = {
+        product_id: productId,
         quantity,
         shipping_address: {
           recipient_name: shipping.recipient_name.trim(),
@@ -254,10 +262,20 @@ export default function CheckoutPage() {
           notes: shipping.notes.trim() || null,
         },
         note_to_jastiper: noteToJastiper.trim() || null,
-      });
+      };
+
+      if (idempotencyKey.current) {
+        body.idempotency_key = idempotencyKey.current;
+      }
+
+      const order = await createOrder(accessToken, body);
 
       router.push(`/orders/${order.order_id}`);
     } catch (err) {
+      if (isApiError(err) && err.status === 409) {
+        setSubmitError('Pesanan ini sudah diproses. Silakan periksa riwayat pesanan Anda.');
+        return;
+      }
       if (isApiError(err)) {
         setSubmitError(err.message || 'Gagal membuat pesanan. Silakan coba lagi.');
       } else {
@@ -320,16 +338,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-(--color-primary-dark) shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-extrabold text-white">JSON</Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/catalog" className="text-sm text-white/80 hover:text-white">Katalog</Link>
-            <span className="text-sm text-white/80">{user?.username ?? user?.email}</span>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
         {/* Back link */}

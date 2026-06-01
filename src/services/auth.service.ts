@@ -194,13 +194,17 @@ export type ReviewKycResponse = {
 
 // ---------------------------------------------------------------------------
 // TASK-102: register
-// POST /auth/register (direct to Auth Service)
+// POST /auth/register  (direct to Auth Service — no BFF needed)
+// Public — no token required
+// Returns HTTP 200 (not 201)
 // ---------------------------------------------------------------------------
 
 export type RegisterInput = {
   email: string;
   password: string;
   password_confirmation: string;
+  /** Only TITIPERS or JASTIPER — sending ADMIN returns HTTP 400 */
+  role: 'TITIPERS' | 'JASTIPER';
 };
 
 export async function register(input: RegisterInput): Promise<RegisterResponse> {
@@ -350,6 +354,12 @@ export async function updateMyProfile(
 
 export async function getPublicProfile(username: string): Promise<PublicProfileResponse> {
   return authRequest<PublicProfileResponse>(`/profile/${encodeURIComponent(username)}`, {
+    method: 'GET',
+  });
+}
+
+export async function getPublicProfileById(userId: string): Promise<PublicProfileResponse> {
+  return authRequest<PublicProfileResponse>(`/profile/id/${encodeURIComponent(userId)}`, {
     method: 'GET',
   });
 }

@@ -15,11 +15,11 @@ import {
   type TopUpSummary,
   type WithdrawalSummary,
 } from '@/services/payment.service';
-import { Navbar } from '@/components/Navbar';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { StatusBadge } from '@/components/StatusBadge';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useToast } from '@/components/Toast';
+import { Navbar } from '@/components/Navbar';
 
 function formatRupiah(amount: number): string {
   return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -31,9 +31,6 @@ function formatDate(iso: string): string {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Sub-nav for the three wallet pages
-// ---------------------------------------------------------------------------
 function WalletSubNav({ current }: { current: 'summary' | 'requests' | 'transactions' }) {
   const tabs = [
     { key: 'summary', href: '/admin/wallet/summary', label: 'Ringkasan' },
@@ -42,26 +39,26 @@ function WalletSubNav({ current }: { current: 'summary' | 'requests' | 'transact
   ] as const;
 
   return (
-      <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4">
-          <nav className="flex gap-1" aria-label="Wallet sub-navigation">
-            {tabs.map((tab) => (
-                <Link
-                    key={tab.key}
-                    href={tab.href}
-                    className={`inline-block border-b-2 px-4 py-3 text-sm font-medium transition ${
-                        current === tab.key
-                            ? 'border-primary text-primary font-semibold'
-                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                    aria-current={current === tab.key ? 'page' : undefined}
-                >
-                  {tab.label}
-                </Link>
-            ))}
-          </nav>
-        </div>
+    <div className="border-b border-gray-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4">
+        <nav className="flex gap-1" aria-label="Wallet sub-navigation">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              className={`inline-block border-b-2 px-4 py-3 text-sm font-medium transition ${
+                current === tab.key
+                  ? 'border-(--color-primary) text-(--color-primary)'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              }`}
+              aria-current={current === tab.key ? 'page' : undefined}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
       </div>
+    </div>
   );
 }
 
@@ -171,9 +168,9 @@ export default function AdminWalletRequestsPage() {
 
   if (authLoading) {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
@@ -182,155 +179,155 @@ export default function AdminWalletRequestsPage() {
   const currentList = activeTab === 'topup' ? topUps : withdrawals;
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <WalletSubNav current="requests" />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <WalletSubNav current="requests" />
 
-        <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Permintaan Top-Up & Penarikan</h1>
-              <p className="mt-1 text-sm text-gray-500">Tinjau dan proses permintaan yang menunggu persetujuan</p>
-            </div>
-            <button
-                onClick={fetchData}
-                disabled={loading}
-                className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition cursor-pointer"
-            >
-              <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Muat Ulang
-            </button>
-          </div>
-
-          {/* Tab buttons */}
-          <div className="flex gap-2" role="tablist">
-            <button
-                role="tab"
-                aria-selected={activeTab === 'topup'}
-                onClick={() => setActiveTab('topup')}
-                className={`rounded-xl px-5 py-2 text-sm font-medium transition cursor-pointer ${
-                    activeTab === 'topup'
-                        ? 'bg-primary text-white shadow-xs font-semibold'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
-                }`}
-            >
-              Top-Up ({topUps.length})
-            </button>
-            <button
-                role="tab"
-                aria-selected={activeTab === 'withdrawal'}
-                onClick={() => setActiveTab('withdrawal')}
-                className={`rounded-xl px-5 py-2 text-sm font-medium transition cursor-pointer ${
-                    activeTab === 'withdrawal'
-                        ? 'bg-primary text-white shadow-xs font-semibold'
-                        : 'bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
-                }`}
-            >
-              Penarikan ({withdrawals.length})
-            </button>
-          </div>
-
-          {/* Error */}
-          {error && (
-              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
-                <span>{error}</span>
-                <button onClick={fetchData} className="ml-4 shrink-0 rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition cursor-pointer">Coba lagi</button>
-              </div>
-          )}
-
-          {/* Content */}
-          {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-xl bg-white p-5 shadow-sm animate-pulse space-y-3">
-                      <div className="h-5 w-40 bg-gray-100 rounded" />
-                      <div className="h-4 w-60 bg-gray-100 rounded" />
-                    </div>
-                ))}
-              </div>
-          ) : currentList.length === 0 ? (
-              <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-                <p className="text-sm text-gray-500">Tidak ada permintaan {activeTab === 'topup' ? 'top-up' : 'penarikan'} yang menunggu.</p>
-              </div>
-          ) : (
-              <div className="space-y-3">
-                {currentList.map((item) => (
-                    <div key={item.transaction_id} className="rounded-xl bg-white p-5 shadow-sm flex flex-wrap items-center justify-between gap-4 border border-gray-100">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {formatRupiah(item.amount)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {formatDate(item.created_at)} &middot; ID: {item.transaction_id.slice(0, 8)}
-                        </p>
-                      </div>
-                      <StatusBadge status={item.status} type="transaction" />
-                      <div className="flex gap-2 shrink-0">
-                        <button
-                            onClick={() => setReviewModal({
-                              type: activeTab,
-                              transactionId: item.transaction_id,
-                              amount: item.amount,
-                            })}
-                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition cursor-pointer"
-                        >
-                          Setujui
-                        </button>
-                        <button
-                            onClick={() => setRejectModal({
-                              type: activeTab,
-                              transactionId: item.transaction_id,
-                            })}
-                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition cursor-pointer"
-                        >
-                          Tolak
-                        </button>
-                      </div>
-                    </div>
-                ))}
-              </div>
-          )}
-        </main>
-
-        {/* Approve Modal */}
-        <ConfirmModal
-            isOpen={!!reviewModal}
-            onClose={() => !actionLoading && setReviewModal(null)}
-            onConfirm={handleApprove}
-            title="Setujui Permintaan"
-            message={`Anda akan menyetujui ${activeTab === 'topup' ? 'top-up' : 'penarikan'} sebesar ${reviewModal ? formatRupiah(reviewModal.amount) : ''}.`}
-            confirmLabel="Setujui"
-            isLoading={actionLoading}
-        />
-
-        {/* Reject Modal */}
-        <ConfirmModal
-            isOpen={!!rejectModal}
-            onClose={() => { setRejectModal(null); setRejectionReason(''); }}
-            onConfirm={handleReject}
-            title="Tolak Permintaan"
-            message="Berikan alasan penolakan untuk permintaan ini."
-            confirmLabel="Tolak"
-            isLoading={actionLoading}
-        >
+      <main className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <label htmlFor="rejection-reason" className="block text-sm font-medium text-gray-700 mb-1">
-              Alasan Penolakan <span className="text-red-500">*</span>
-            </label>
-            <textarea
-                id="rejection-reason"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Jelaskan alasan penolakan"
-                rows={3}
-                maxLength={500}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
-            />
-            <p className="text-xs text-gray-400 mt-1">{rejectionReason.length}/500</p>
+            <h1 className="text-2xl font-bold text-gray-900">Request Top-Up & Withdrawals</h1>
+            <p className="mt-1 text-sm text-gray-500">Tinjau dan proses request yang menunggu persetujuan</p>
           </div>
-        </ConfirmModal>
-      </div>
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+          >
+            <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Muat Ulang
+          </button>
+        </div>
+
+        {/* Tab buttons */}
+        <div className="flex gap-2" role="tablist">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'topup'}
+            onClick={() => setActiveTab('topup')}
+            className={`rounded-xl px-5 py-2 text-sm font-medium transition ${
+              activeTab === 'topup'
+                ? 'bg-(--color-primary) text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
+            }`}
+          >
+            Top-Up ({topUps.length})
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'withdrawal'}
+            onClick={() => setActiveTab('withdrawal')}
+            className={`rounded-xl px-5 py-2 text-sm font-medium transition ${
+              activeTab === 'withdrawal'
+                ? 'bg-(--color-primary) text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
+            }`}
+          >
+            Withdrawal ({withdrawals.length})
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={fetchData} className="ml-4 shrink-0 rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition">Coba lagi</button>
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl bg-white p-5 shadow-sm animate-pulse space-y-3">
+                <div className="h-5 w-40 bg-gray-100 rounded" />
+                <div className="h-4 w-60 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : currentList.length === 0 ? (
+          <div className="rounded-xl bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-gray-500">Tidak ada permintaan {activeTab === 'topup' ? 'top-up' : 'withdrawal'} yang menunggu.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {currentList.map((item) => (
+              <div key={item.transaction_id} className="rounded-xl bg-white p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatRupiah(item.amount)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {formatDate(item.created_at)} &middot; ID: {item.transaction_id.slice(0, 8)}
+                  </p>
+                </div>
+                <StatusBadge status={item.status} type="transaction" />
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => setReviewModal({
+                      type: activeTab,
+                      transactionId: item.transaction_id,
+                      amount: item.amount,
+                    })}
+                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition"
+                  >
+                    Setujui
+                  </button>
+                  <button
+                    onClick={() => setRejectModal({
+                      type: activeTab,
+                      transactionId: item.transaction_id,
+                    })}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+                  >
+                    Tolak
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Approve Modal */}
+      <ConfirmModal
+        isOpen={!!reviewModal}
+        onClose={() => !actionLoading && setReviewModal(null)}
+        onConfirm={handleApprove}
+        title="Setujui Permintaan"
+        message={`Anda akan menyetujui ${activeTab === 'topup' ? 'top-up' : 'withdrawal'} sebesar ${reviewModal ? formatRupiah(reviewModal.amount) : ''}.`}
+        confirmLabel="Setujui"
+        isLoading={actionLoading}
+      />
+
+      {/* Reject Modal */}
+      <ConfirmModal
+        isOpen={!!rejectModal}
+        onClose={() => { setRejectModal(null); setRejectionReason(''); }}
+        onConfirm={handleReject}
+        title="Tolak Permintaan"
+        message="Berikan alasan penolakan untuk permintaan ini."
+        confirmLabel="Tolak"
+        isLoading={actionLoading}
+      >
+        <div>
+          <label htmlFor="rejection-reason" className="block text-sm font-medium text-gray-700 mb-1">
+            Alasan Penolakan <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id="rejection-reason"
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Jelaskan alasan penolakan"
+            rows={3}
+            maxLength={500}
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">{rejectionReason.length}/500</p>
+        </div>
+      </ConfirmModal>
+    </div>
   );
 }

@@ -64,7 +64,8 @@ async function tryReadJson(res: Response): Promise<unknown> {
   const ct = res.headers.get('content-type') ?? '';
   if (!ct.toLowerCase().includes('application/json')) return null;
   try {
-    return await res.json();
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
   } catch {
     return null;
   }
@@ -290,7 +291,13 @@ export async function appFetch<T>(
     ...(options?.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
   });
 
-  const responseBody = await res.json().catch(() => null);
+  let responseBody: unknown = null;
+  try {
+    const text = await res.text();
+    responseBody = text ? JSON.parse(text) : null;
+  } catch {
+    responseBody = null;
+  }
 
   if (!res.ok) {
     const b = responseBody as { message?: string } | null;

@@ -11,7 +11,7 @@ This document defines the complete UI/UX design for every page and shared compon
 - **Purpose:** Introduce the JSON platform, showcase featured products, and direct users to register or browse.
 
 ### Layout and Components
-The landing page uses a full-width layout with a sticky Navbar at the top. Sections:
+The landing page uses a full-width layout with the shared `<Navbar />` component at the top, which conditionally shows user menu (if authenticated) or "Masuk"/"Daftar" (if guest). Sections:
 1. Hero Section: Full-width banner with JSON logo, tagline "Jastip Online Nasional, Mudah dan Terpercaya", and two CTA buttons: "Mulai Belanja" (links to /catalog) and "Daftar Sebagai Jastiper" (links to /register). Background uses a gradient from --color-primary-dark to --color-primary.
 2. Featured Products Section: Horizontally scrollable row of up to 8 ProductCard components showing ACTIVE products sorted by rating descending. Fetched from GET /products with limit=8&sortBy=rating&order=desc.
 3. How It Works Section: Three-column icon grid explaining the jastip flow: (1) Pilih Produk — browse and select items from jastipers, (2) Bayar via Dompet — pay securely from your JSON wallet, (3) Terima Barang — receive your item delivered to your door.
@@ -20,7 +20,6 @@ The landing page uses a full-width layout with a sticky Navbar at the top. Secti
 6. Footer: Links to About, FAQ, Contact, Terms of Service, Privacy Policy, and social media icons.
 
 ### Reusable Components Used
-- Navbar
 - ProductCard
 - RatingStars
 - LoadingSpinner / SkeletonLoader
@@ -36,8 +35,7 @@ The landing page uses a full-width layout with a sticky Navbar at the top. Secti
 - Clicking a ProductCard navigates to /catalog/[productId]
 - Clicking a jastiper mini-card navigates to /jastiper/[username]
 - Clicking a category chip navigates to /catalog?categoryId=[id]
-- Navbar shows Login and Register buttons for unauthenticated users
-- Navbar shows user avatar and wallet balance for authenticated users
+- Inline header shows "Masuk" and "Daftar" for guests, "Dashboard" link for authenticated users
 
 ### Edge Cases and States
 - Loading state: 8 ProductCard skeletons shown while featured products load; category chips show placeholder pills
@@ -71,7 +69,9 @@ Centered card layout on a light background. The card contains:
 ### User Interactions
 - User fills email and password fields
 - Submitting the form calls the BFF login route using React 19 form action pattern
-- On success: access token stored in AuthProvider context; user redirected to /dashboard (TITIPERS), /jastiper/dashboard (JASTIPER), or /admin/dashboard (ADMIN) based on role
+- On success: access token stored in AuthProvider context; user redirected to:
+  - `?redirect=` query param if provided (e.g., `/login?redirect=/orders`)
+  - Otherwise: `/dashboard` (TITIPERS), `/jastiper/dashboard` (JASTIPER), or `/admin/catalog` (ADMIN)
 - On failure: inline error message shown (e.g., "Email atau kata sandi salah", "Akun Anda telah diblokir")
 - Loading state: submit button shows spinner and is disabled during request
 
@@ -106,20 +106,25 @@ Centered card layout matching the login page style. The card contains:
 - Toast / Notification
 
 ### API / Service Calls
-- POST /auth/register — creates the account via Auth Service
+- `register({ email, password, password_confirmation, role })` — calls POST /auth/register with all fields (snake_case). `role` is "TITIPERS" or "JASTIPER".
 
 ### User Interactions
-- User selects role (TITIPERS default), fills email, password, password_confirmation
-- On submit: calls auth.service.ts register function
-- On success (TITIPERS): redirects to /login with success toast "Akun berhasil dibuat. Silakan masuk."
-- On success (JASTIPER): redirects to /login with info toast "Akun Jastiper dibuat. Tunggu verifikasi KYC dari admin."
-- On failure: per-field validation errors shown inline
+- User selects role via toggle buttons ("Pembeli (Titipers)" / "Jastiper"); default is TITIPERS
+- Selecting JASTIPER shows informational banner: "Akun Jastiper memerlukan verifikasi KYC sebelum dapat beroperasi."
+- User fills email, password, password_confirmation
+- Password visibility toggles (+ confirm password toggle) available
+- On submit: calls `register()` with `role` included in the request body
+- On success (TITIPERS): redirects to /login?success="Akun berhasil dibuat. Silakan masuk."
+- On success (JASTIPER): redirects to /login?success="Akun Jastiper dibuat. Tunggu verifikasi KYC dari admin."
+- Success message passed via query param and displayed as toast on login page
+- On failure: per-field validation errors shown inline (emailError, passwordError, confirmError, generalError)
 
 ### Edge Cases and States
-- Loading state: Submit button disabled with spinner
-- Email already in use: Inline error "Email sudah terdaftar"
+- Loading state: `isSubmitting` disables submit button; no spinner shown, just disabled state
+- Email already in use: Inline error at email field "Email sudah terdaftar"
 - Password mismatch: Inline error "Kata sandi tidak cocok"
-- Password too weak: Inline error "Kata sandi minimal 8 karakter dan harus mengandung huruf dan angka"
+- Password too short: Inline error "Kata sandi minimal 8 karakter"
+- General API errors: Shown at top of form in red text
 
 ---
 
@@ -129,47 +134,48 @@ Centered card layout matching the login page style. The card contains:
 - **Purpose:** Allow users to search and browse all available ACTIVE products with filtering and pagination.
 
 ### Layout and Components
-Two-column layout: a narrow left sidebar for filters and a main content area for product results.
-Left Sidebar:
-- SearchBar component at the top
-- Category filter: dropdown or checkbox list from GET /categories
-- Price range filter: two number inputs (Min Price, Max Price)
-- Origin country filter: text input or dropdown
-- Purchase date range: two date pickers (from, to)
-- Sort options: dropdown with options Created At (Terbaru), Rating (Tertinggi), Price (Termurah/Termahal)
-- Apply Filters button and Reset Filters link
-Main Content Area:
+Single-column layout with Navbar at the top and a filter row below the page title. Wrapped in `<Suspense>` for `useSearchParams`:
+- `<Navbar />` component at the top (handles guest vs. authenticated user display)
+- Page title: "Katalog Produk"
+- Filter row (horizontal, wraps on mobile):
+  - SearchBar for keyword search (debounced 300ms, syncs with `?q=` query param)
+  - Category dropdown populated from GET /categories
+  - Price range: two number inputs (Min Price, Max Price)
+  - Sort dropdown (Terbaru, Tertinggi, Termurah, Termahal)
+  - Apply Filters and Reset buttons
 - Results count: "Menampilkan X produk"
-- Product grid: responsive 2-4 column grid of ProductCard components
+- Product grid: responsive 2-4 column grid of ProductCard components rendered inline (not from shared component; defined locally in the file)
 - Pagination component at the bottom
+- All state is driven from URL search params via `useSearchParams()` — page is shareable/bookmarkable
 
 ### Reusable Components Used
 - Navbar
-- SearchBar
-- ProductCard
+- SearchBar (inline via local component)
+- ProductCard (inline via local component)
 - Pagination
 - LoadingSpinner / SkeletonLoader
 - EmptyState
 
 ### API / Service Calls
-- GET /products?q=&categoryId=&minPrice=&maxPrice=&origin_country=&purchase_date_from=&purchase_date_to=&page=&limit=&sortBy=&order= — fetches filtered products
-- GET /categories — fetches category list for filter dropdown
+- `searchProducts(params)` — calls GET /products with all filter params (q, categoryId, minPrice, maxPrice, origin_country, purchase_date_from, purchase_date_to, page, limit, sortBy, order)
+- `getCategories()` — calls GET /categories for dropdown
 
 ### User Interactions
-- Typing in SearchBar updates the q query param (debounced 300ms)
-- Selecting a category updates categoryId param
-- Changing price range updates minPrice/maxPrice params
-- Clicking Apply Filters triggers a new API call with all current filter values
+- Typing in SearchBar updates the `?q=` query param (debounced 300ms)
+- Selecting a category updates `?categoryId=` param
+- Changing price range updates `?minPrice=` / `?maxPrice=` params
+- Clicking Apply Filters triggers `searchProducts()` with current filter state; URL param sync happens after API call
 - Clicking Reset Filters clears all params and reloads
 - Clicking a ProductCard navigates to /catalog/[productId]
-- Pagination controls update the page param
-- URL query params are kept in sync so the page is shareable/bookmarkable
+- Pagination controls update `?page=` param
+- All state reads from URL on mount via `useSearchParams()` — supports back/forward navigation
 
 ### Edge Cases and States
-- Loading state: Product grid replaced with 12 ProductCard skeletons
+- Loading state: Product grid replaced with 8 ProductCard skeletons (rendered via local `ProductCardSkeleton` component)
 - Empty state: EmptyState component with message "Tidak ada produk yang sesuai dengan filter Anda" and a Reset Filters button
-- Error state: Error message with retry button
+- Error state: Inline error with a "Coba lagi" retry button
 - No filters applied: Shows all ACTIVE products sorted by newest
+- Guest users see login/register buttons in Navbar; authenticated users see their user menu
 
 ---
 
@@ -208,6 +214,7 @@ Below the columns:
 
 ### API / Service Calls
 - GET /products/{id} — fetches full product detail including jastiper info and stats
+- NOTE: Backend returns snake_case fields (purchase_date, origin_country, service_fee, weight_gram, product_id, etc.) despite type definitions claiming camelCase. The page uses a `normalizeProduct()` helper at the fetch site to map snake_case → camelCase before storing in state, so the rest of the component can access fields like `product.purchaseDate` safely.
 
 ### User Interactions
 - Clicking "Beli Sekarang" navigates to /checkout/[productId]
@@ -250,20 +257,21 @@ Product Catalog Section:
 - Navbar
 - StatusBadge
 - RatingStars
-- ProductCard
-- SearchBar
+- ProductCard (inline via local component)
+- SearchBar (inline via local component)
 - Pagination
 - LoadingSpinner / SkeletonLoader
 - EmptyState
 
 ### API / Service Calls
-- GET /profile/{username} — fetches jastiper public profile with stats, rating, badges
-- GET /jastipers/{username}/products?q=&page=&size= — fetches jastiper product catalog
+- `useAuthorizedFetch('auth', '/profile/{username}')` — fetches jastiper public profile with avatar, stats, rating, badges (NOTE: this endpoint does NOT require JWT — it works for guests because it's a public profile endpoint. The `useAuthorizedFetch` hook is not used; instead a direct fetch to the auth service is made)
+- `getJastiperCatalog(username, params)` — calls GET /jastipers/{username}/products for product catalog
 
 ### User Interactions
 - SearchBar filters products within this jastiper catalog
 - Clicking a ProductCard navigates to /catalog/[productId]
 - Pagination controls update the page param
+- Ratings section ("Ulasan tentang Jastiper") was removed — no jastiper ratings are displayed on this page
 
 ### Edge Cases and States
 - Loading state: Profile header skeleton and product grid skeletons
@@ -308,6 +316,7 @@ Dashboard layout with Navbar at top and a main content area:
 - Clicking an OrderCard navigates to /orders/[orderId]
 - Clicking "Lihat Semua" navigates to /orders
 - KYCStatusBanner CTA navigates to /profile/kyc
+- Role guard: non-TITIPERS (JASTIPER/ADMIN) are redirected to their respective dashboards
 
 ### Edge Cases and States
 - Loading state: Stats cards and OrderCard skeletons
@@ -360,20 +369,23 @@ Full-width layout with Navbar:
 
 ### Layout and Components
 Single-column layout with Navbar:
-- Order ID and created_at at the top
+- Back link: "← Kembali ke Pesanan" linking to /orders
+- Order ID (truncated to 8 chars) and created_at at the top
 - StatusBadge showing current order status
-- Order status timeline: visual stepper showing PENDING, PAID, PURCHASED, SHIPPED, COMPLETED with timestamps from order history
-- Product snapshot card: image, name, quantity, unit_price, service_fee, total_price
-- Jastiper info: avatar, username, link to /jastiper/[username]
-- Shipping address details
-- Note to jastiper (if any)
-- Tracking info section (shown when status is SHIPPED or later): tracking_number, courier
+- REFUNDING/REFUND_FAILED banner with contextual styling
+- Order status timeline: visual stepper showing PENDING ("Menunggu Pembayaran"), PAID ("Dibayar"), PURCHASED ("Dibeli Jastiper"), SHIPPED ("Dikirim"), COMPLETED ("Selesai") with timestamps from order history — NOTE: labels do NOT include waiting context (e.g. "Dibayar" instead of "Dibayar — Menunggu dibeli jastiper")
+- Product snapshot card: image, name, quantity, unit_price, service_fee, total_price — NOT wrapped in a Link (not clickable)
+- Jastiper info: raw `{order.jastiper_id}` displayed as text — no avatar, no username, no rich profile fetch
+- Shipping address details: recipient_name, phone_number, full address, notes
+- Note to jastiper (if any): "Catatan untuk Jastiper" section
+- Tracking info section (shown when SHIPPED or later): tracking_number, courier
 - Cancellation info (shown when CANCELLED): cancellation_reason, cancelled_by (role: TITIPERS/JASTIPER/ADMIN/SYSTEM — not a username)
 - Action buttons based on status:
-  - PENDING: "Bayar Sekarang" button (triggers payment from wallet)
+  - PENDING: "Bayar Sekarang" button — triggers wallet payment; pre-fetches wallet balance; disables if insufficient
   - SHIPPED: "Konfirmasi Penerimaan" button
   - COMPLETED: "Beri Rating Jastiper" and "Beri Rating Produk" buttons (if not yet rated)
-- Rating section (shown after COMPLETED): displays submitted ratings or rating forms
+- Rating modals (not inline): separate full-screen modal for each rating type with interactive RatingStars, review textarea (max 1000 chars), submit/cancel buttons
+- Submitted ratings shown in read-only cards below rating buttons
 
 ### Reusable Components Used
 - Navbar
@@ -384,28 +396,31 @@ Single-column layout with Navbar:
 - LoadingSpinner / SkeletonLoader
 
 ### API / Service Calls
-- GET /orders/{order_id} — fetches full order detail
-- GET /orders/{order_id}/history — fetches status change history for timeline
-- PATCH /orders/{order_id}/payment — initiates wallet payment (PENDING to PAID)
-- PATCH /orders/{order_id}/confirm — confirms receipt (SHIPPED to COMPLETED)
-- GET /orders/{order_id}/rating/jastiper — checks if jastiper rating exists
-- POST /orders/{order_id}/rating/jastiper — submits jastiper rating
-- GET /orders/{order_id}/rating/product — checks if product rating exists
-- POST /orders/{order_id}/rating/product — submits product rating
+- `getOrder(accessToken, orderId)` — calls GET /orders/{order_id}
+- `getOrderHistory(accessToken, orderId)` — calls GET /orders/{order_id}/history
+- `authorizedFetch('payment', '/wallets/me')` — fetches wallet balance for pay button pre-check (TASK-419)
+- `payOrder(accessToken, orderId)` — calls PATCH /orders/{order_id}/payment
+- `confirmOrder(accessToken, orderId)` — calls PATCH /orders/{order_id}/confirm
+- `getJastiperRating(accessToken, orderId)` — calls GET /orders/{order_id}/rating/jastiper
+- `rateJastiper(accessToken, orderId, { jastiper_rating, jastiper_review })` — calls POST /orders/{order_id}/rating/jastiper
+- `getProductRating(accessToken, orderId)` — calls GET /orders/{order_id}/rating/product
+- `rateProduct(accessToken, orderId, { product_rating, product_review })` — calls POST /orders/{order_id}/rating/product
+- NOTE: No profile fetch is made for jastiper info — only the raw jastiper_id from the order is displayed
 
 ### User Interactions
-- Clicking "Bayar Sekarang" opens a ConfirmModal showing wallet balance and order total; confirming calls PATCH /payment
-- Clicking "Konfirmasi Penerimaan" opens a ConfirmModal; confirming calls PATCH /confirm
-- Rating forms appear inline after COMPLETED; submitting calls POST rating endpoints
-- Rating stars are interactive (click to set value)
+- Clicking "Bayar Sekarang" refreshes wallet balance, then opens ConfirmModal showing balance vs. total; confirming calls `payOrder`
+- Insufficient balance shows a warning ("Saldo tidak mencukupi") with a link to /wallet to top up
+- Clicking "Konfirmasi Penerimaan" opens ConfirmModal; confirming calls `confirmOrder`
+- Rating buttons open separate modals (not inline); interactive RatingStars set rating value
+- On COMPLETED, ratings are fetched via `Promise.allSettled` to see if already submitted
 
 ### Edge Cases and States
 - Loading state: Full page skeleton
 - Order not found: 404 page
-- Insufficient wallet balance: ConfirmModal shows error "Saldo tidak mencukupi. Silakan top up terlebih dahulu."
-- Already rated: Rating section shows submitted rating (read-only RatingStars)
-- REFUNDING status: Shows "Pesanan sedang dalam proses refund" banner
-- REFUND_FAILED: Shows "Refund gagal. Hubungi admin." banner
+- Insufficient wallet balance: Pay button disabled, warning shown with wallet balance and top-up link
+- Already rated: Submitted rating shown in read-only card (not editable)
+- REFUNDING status: Shows orange "Pesanan sedang dalam proses refund" banner
+- REFUND_FAILED: Shows red "Refund gagal. Hubungi admin." banner
 
 ---
 
@@ -462,7 +477,7 @@ Right Column (Shipping Form):
 - **Purpose:** Display wallet balance, transaction history, and allow top-up requests.
 
 ### Layout and Components
-Full-width layout with Navbar:
+Full-width layout with Navbar at top and `max-w-5xl` centered content (consistent with dashboard and other authenticated pages):
 - WalletSummary card at the top: balance (large), "Top Up" button. NOTE: GET /wallets/me only returns wallet_id, user_id, and balance — escrow_balance is NOT available from this endpoint. Do not show an escrow note on this page.
 - Top Up form (collapsible or modal): amount input, payment_method dropdown, bank_code input, idempotency_key (auto-generated UUID, hidden from user)
 - Transaction history section:
@@ -524,19 +539,20 @@ Centered card layout:
 - Toast / Notification
 
 ### API / Service Calls
-- GET /profile/me — fetches current profile
-- PATCH /profile/me — updates profile fields
+- `getMyProfile()` — calls GET /profile/me
+- `updateMyProfile(data)` — calls PATCH /profile/me
 
 ### User Interactions
-- Editing fields and clicking Save calls PATCH /profile/me
-- On success: toast "Profil berhasil diperbarui"
+- Editing fields and clicking Save calls `updateMyProfile`
+- On success: `setSaveSuccess(true)`, shows success state for 3 seconds via `setTimeout(() => setSaveSuccess(false), 3000)` — does NOT redirect. User stays on /profile page.
+- After save: a green success alert "Profil berhasil diperbarui" appears for 3 seconds and auto-dismisses
 - On username conflict: inline error "Username sudah digunakan"
 - KYC status link navigates to /profile/kyc
 
 ### Edge Cases and States
-- Loading state: Form skeleton
+- Loading state: Form skeleton while fetching profile
 - Username validation: real-time pattern check (alphanumeric + underscore only)
-- Unsaved changes: browser beforeunload warning if form is dirty
+- Role/status badges shown as read-only colored chips
 
 ---
 
@@ -546,9 +562,10 @@ Centered card layout:
 - **Purpose:** Allow a titiper to submit KYC documents to apply for JASTIPER status.
 
 ### Layout and Components
-Centered card layout:
+Full-width layout with Navbar at top, centered card below:
 - Page title: "Verifikasi Identitas (KYC)"
 - KYC status banner at top (if already submitted)
+- **Prerequisite check**: on page load, fetches profile via GET /profile/me. If username or full_name is missing (profile incomplete), redirects to /profile so user fills basic info first
 - Form fields:
   - full_name_ktp: text input
   - ktp_number: text input (16 digits, numeric only)
@@ -564,6 +581,7 @@ Centered card layout:
 - Toast / Notification
 
 ### API / Service Calls
+- GET /profile/me — fetches profile to check username/full_name completeness; redirects to /profile if either is missing
 - GET /profile/me/kyc — fetches current KYC status (to show if already submitted)
 - POST /profile/me/kyc — submits KYC documents
 
@@ -575,10 +593,48 @@ Centered card layout:
 - On failure: per-field validation errors shown inline
 
 ### Edge Cases and States
+- Profile incomplete (no username or full_name): Redirects to /profile before showing KYC form
 - Already submitted (PENDING_VERIFICATION): Form is read-only; shows status banner
 - Already approved (APPROVED): Shows success banner "KYC Anda telah disetujui"; form hidden
 - Rejected (REJECTED): Shows rejection reason and allows re-submission
 - ktp_number validation: real-time check for exactly 16 digits
+
+---
+
+## Page: Public Profile (Any User)
+- **URL:** /profile/[username]
+- **Access:** Public
+- **Purpose:** Display a public profile for any user (TITIPERS or JASTIPER) — simpler than the jastiper-specific page at /jastiper/[username].
+
+### Layout and Components
+Single-column centered layout (max-w-2xl) with Navbar:
+- Profile card (rounded-xl border bg-white p-6):
+  - Avatar (large 80x80px): profile_picture_url or initial letter in circle
+  - Username (h1), account status badge, role badge (Jastiper/Titipers)
+  - Full name (if available)
+  - "Bergabung sejak" date
+  - Banned warning banner (shown if status === BANNED)
+  - Jastiper stats section (shown only if role === JASTIPER): 3 stats in grid — Total Transaksi (total_orders), Selesai Berhasil (success_rate * 100), Reputasi Penjual (avg_rating via RatingStars)
+  - Badges row (if any): colored chips
+  - Link to /jastiper/[username] if JASTIPER: "Lihat katalog produk →"
+
+### Reusable Components Used
+- Navbar
+- StatusBadge (local component)
+- RatingStars (local component)
+
+### API / Service Calls
+- `getPublicProfile(username)` — calls GET /profile/{username} (Auth Service, public endpoint, no JWT required)
+
+### User Interactions
+- Clicking "Lihat katalog produk" navigates to /jastiper/[username]
+- Clicking Navbar links work as usual
+- Page is fully public — no authentication required
+
+### Edge Cases and States
+- Loading state: Avatar circle skeleton + text line skeletons
+- Profile not found (404): "Profil tidak ditemukan" with username in message; "Kembali ke Katalog" link
+- Error/network failure: "Gagal memuat profil" message; "Kembali ke Katalog" link
 
 ---
 
@@ -590,36 +646,38 @@ Centered card layout:
 - **Purpose:** Provide a jastiper-specific overview including sales stats, incoming orders, and wallet earnings.
 
 ### Layout and Components
-Dashboard layout with Navbar and optional Sidebar:
-- Welcome banner: "Selamat datang, [username]! Kelola toko Anda."
-- Stats row (4 cards): Total Penjualan, Pesanan Aktif, Total Pendapatan, Rating Rata-rata
-- WalletSummary card: shows current balance with a "Tarik Dana" button linking to /jastiper/wallet
-- Incoming Orders section: last 5 orders as OrderCard components with a "Lihat Semua" link to /jastiper/orders
-- Quick Actions: "Tambah Produk" (/jastiper/catalog/new), "Katalog Saya" (/jastiper/catalog), "Pesanan Masuk" (/jastiper/orders)
+Dashboard layout with Navbar at top, centered single-column content:
+- Welcome banner: "Selamat datang, [username] || 'Jastiper'"
+- Wallet section: gradient hero card (from --color-secondary to orange-500) with balance, "Kelola Dompet" link, and "Tarik Saldo" button (both link to /jastiper/wallet)
+- Stats row (3 clickable `OrderStatCard` components wrapping `<Link>`):
+  - **To-Do List** — count of PAID orders; links to `/jastiper/orders?status=PAID`; orange clipboard icon
+  - **Sedang Diproses** — count of PURCHASED + SHIPPED orders; links to `/jastiper/orders?status=PURCHASED`; blue cube icon
+  - **Selesai** — count of COMPLETED orders; links to `/jastiper/orders?status=COMPLETED`; green checkmark circle icon
+  - NOTE: These stats are derived from the last 5 orders fetched — they only reflect recent data, not full history
+- Recent Orders section: table view (not OrderCard) with columns (Produk, Pembeli, Total, Status, Tanggal); rows are clickable navigating to /jastiper/orders/[orderId]
+- Quick Actions: 3 cards linking to "Pesanan" (/jastiper/orders), "Katalog" (/jastiper/catalog), "Dompet" (/jastiper/wallet)
 
 ### Reusable Components Used
 - Navbar
-- Sidebar
-- WalletSummary
-- OrderCard
 - StatusBadge
-- RatingStars
 - LoadingSpinner / SkeletonLoader
+- EmptyState
 
 ### API / Service Calls
-- GET /profile/me — fetches jastiper profile
-- GET /wallets/me — fetches wallet balance
-- GET /orders/my/sales?page=1&limit=5 — fetches recent incoming orders
+- `getMySales(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' })` — fetches orders; stats derived client-side from this data
+- `authorizedFetch('payment', '/wallets/me')` — fetches wallet balance (silently fails to null)
 
 ### User Interactions
-- Clicking "Tarik Dana" navigates to /jastiper/wallet
-- Clicking an OrderCard navigates to /jastiper/orders/[orderId]
-- Clicking "Tambah Produk" navigates to /jastiper/catalog/new
+- Clicking "Kelola Dompet" or "Tarik Saldo" navigates to /jastiper/wallet
+- Clicking an OrderStatCard navigates to /jastiper/orders?status=PAID|PURCHASED|COMPLETED
+- Clicking a table row navigates to /jastiper/orders/[orderId]
+- Quick action cards navigate to respective pages
 
 ### Edge Cases and States
-- Loading state: Stats cards and OrderCard skeletons
-- No orders: EmptyState "Belum ada pesanan masuk"
-- PENDING_VERIFICATION jastiper: Shows a prominent banner "Akun Anda sedang dalam proses verifikasi KYC. Anda belum dapat menerima pesanan."
+- Loading state: Wallet skeleton, 3 stat card skeletons, and table row skeletons
+- Error loading orders: Shows error message with "Coba lagi" retry button
+- No orders: EmptyState "Belum ada pesanan masuk" with action "Buka Katalog"
+- Wallet fetch failure: Balance shows "Gagal memuat saldo" — graceful degradation
 
 ---
 
@@ -749,16 +807,19 @@ Same form layout as Create Product, pre-populated with existing product data:
 - **Purpose:** Allow a jastiper to view and manage all incoming orders.
 
 ### Layout and Components
-Full-width layout with Navbar and Sidebar:
-- Page title: "Pesanan Masuk"
-- Status filter tabs: All, PENDING, PAID, PURCHASED, SHIPPED, COMPLETED, CANCELLED
-- List of OrderCard components showing: product snapshot, titiper username, total_price, status badge, created_at, action buttons
+Full-width layout with Navbar (no Sidebar):
+- Page title: "Daftar Pesanan Masuk"
+- Status filter tabs (has `role="tablist"`): All (Semua), PENDING (Menunggu), PAID (Dibayar), PURCHASED (Dibeli), SHIPPED (Dikirim), COMPLETED (Selesai), CANCELLED (Dibatalkan)
+  - Initial tab reads from `?status=` URL query param via `useSearchParams()` — allows deep-linking from dashboard cards
+  - Invalid status values default to "ALL"
+- List of OrderCard components showing: product snapshot, titiper username (truncated UUID), total_price, status badge, created_at, action buttons
 - Action buttons per status: PAID shows "Tandai Dibeli", PURCHASED shows "Tandai Dikirim", any cancellable status shows "Batalkan"
 - Pagination
+- Shipped modal: tracking_number input (optional), courier input (optional)
+- Cancel modal: cancellation_reason textarea (required, max 500 chars)
 
 ### Reusable Components Used
 - Navbar
-- Sidebar
 - OrderCard
 - StatusBadge
 - ConfirmModal
@@ -768,21 +829,23 @@ Full-width layout with Navbar and Sidebar:
 - Toast / Notification
 
 ### API / Service Calls
-- GET /orders/my/sales?page=&limit=20 — fetches incoming orders
-- PATCH /orders/{order_id}/purchased — marks order as purchased
-- PATCH /orders/{order_id}/shipped — marks order as shipped
-- POST /orders/{order_id}/cancel — cancels an order
+- `getMySales(accessToken, { page, limit, sort_by: 'created_at', order: 'Desc' })` — fetches all sales; client-side filter by status tab
+- `markPurchased(accessToken, orderId)` — calls PATCH /orders/{order_id}/purchased
+- `markShipped(accessToken, orderId, trackingNumber, courier)` — calls PATCH /orders/{order_id}/shipped
+- `cancelOrder(accessToken, orderId, cancellationReason)` — calls POST /orders/{order_id}/cancel
 
 ### User Interactions
-- Clicking "Tandai Dibeli" calls PATCH /purchased
-- Clicking "Tandai Dikirim" opens a modal to enter tracking_number and courier, then calls PATCH /shipped
-- Clicking "Batalkan" opens ConfirmModal with a cancellation_reason textarea; confirming calls POST /cancel
+- Clicking a status tab sets `statusFilter` state and resets page to 1; client-side filters the fetched order list
+- Clicking "Tandai Dibeli" calls `markPurchased` directly (no modal)
+- Clicking "Tandai Dikirim" opens a modal to enter tracking_number and courier, then calls `markShipped`
+- Clicking "Batalkan" opens ConfirmModal with a cancellation_reason textarea; confirming calls `cancelOrder`
 - Clicking an OrderCard navigates to /jastiper/orders/[orderId]
 
 ### Edge Cases and States
-- Loading state: OrderCard skeletons
-- No orders: EmptyState "Belum ada pesanan masuk"
-- Cancellation reason required: ConfirmModal submit disabled until reason is entered
+- Loading state: OrderCard skeletons (5 items)
+- No orders: EmptyState "Belum ada pesanan masuk" (or "Tidak ada pesanan dengan status ini" if filter active)
+- Error state: Error message with "Coba lagi" retry button
+- Cancellation reason required: ConfirmModal submit disabled until reason is entered (non-empty check)
 
 ---
 
@@ -793,41 +856,47 @@ Full-width layout with Navbar and Sidebar:
 
 ### Layout and Components
 Same layout as Titiper Order Detail but with jastiper-specific actions:
-- Order ID, status badge, timeline
-- Product snapshot, quantity, pricing
-- Titiper info: username, shipping address
-- Note from titiper
-- Action buttons based on status:
-  - PAID: "Tandai Sudah Dibeli" button
-  - PURCHASED: "Tandai Sudah Dikirim" button (opens tracking form)
-  - PAID or PURCHASED: "Batalkan Pesanan" button
-- Tracking form (shown when clicking Tandai Dikirim): tracking_number input, courier input
+- Back link: "← Kembali ke Pesanan Masuk" linking to /jastiper/orders
+- Order ID (truncated to 8 chars), status badge, timeline with labels: PENDING ("Menunggu Pembayaran"), PAID ("Dibayar"), PURCHASED ("Dibeli Jastiper"), SHIPPED ("Dikirim"), COMPLETED ("Selesai") — NOTE: labels do NOT include waiting context (e.g. "Dibayar" instead of "Dibayar")
+- Product snapshot, quantity, pricing — NOT wrapped in a Link (not clickable)
+- Titiper info: raw `{order.titipers_id}` displayed as text — no avatar, no username, no profile fetch
+- Shipping address: recipient_name, phone_number, full address, notes
+- Note from titiper: "Catatan dari Pembeli"
+- Tracking info (shown when tracking_number or courier exists)
 - Cancellation section (shown when CANCELLED): reason and cancelled_by (role: TITIPERS/JASTIPER/ADMIN/SYSTEM — not a username)
+- Action buttons based on status:
+  - PAID: "Tandai Dibeli" button — opens ConfirmModal
+  - PURCHASED: "Tandai Dikirim" button — opens tracking form modal
+  - PENDING/PAID/PURCHASED: "Batalkan Pesanan" button — opens ConfirmModal with cancellation_reason textarea
+- Tracking form (shown in modal when clicking Tandai Dikirim): tracking_number input (optional), courier input (optional)
 
 ### Reusable Components Used
 - Navbar
-- Sidebar
 - StatusBadge
 - ConfirmModal
 - Toast / Notification
 - LoadingSpinner / SkeletonLoader
 
 ### API / Service Calls
-- GET /orders/{order_id} — fetches order detail
-- GET /orders/{order_id}/history — fetches status history
-- PATCH /orders/{order_id}/purchased — marks as purchased
-- PATCH /orders/{order_id}/shipped — marks as shipped with tracking info
-- POST /orders/{order_id}/cancel — cancels the order
+- `getOrder(accessToken, orderId)` — calls GET /orders/{order_id}
+- `getOrderHistory(accessToken, orderId)` — calls GET /orders/{order_id}/history
+- `markPurchased(accessToken, orderId)` — calls PATCH /orders/{order_id}/purchased
+- `markShipped(accessToken, orderId, trackingNumber, courier)` — calls PATCH /orders/{order_id}/shipped
+- `cancelOrder(accessToken, orderId, cancellationReason)` — calls POST /orders/{order_id}/cancel
+- NOTE: No buyer profile fetch is made — only the raw titipers_id from the order is displayed
 
 ### User Interactions
-- "Tandai Sudah Dibeli" opens ConfirmModal; confirming calls PATCH /purchased
-- "Tandai Sudah Dikirim" opens a form modal for tracking_number and courier; submitting calls PATCH /shipped
-- "Batalkan Pesanan" opens ConfirmModal with cancellation_reason textarea
+- "Tandai Dibeli" opens ConfirmModal; confirming calls `markPurchased` and updates order state client-side (no full re-fetch)
+- "Tandai Dikirim" opens a form modal for tracking_number and courier; submitting calls `markShipped` then re-fetches order
+- "Batalkan Pesanan" opens ConfirmModal with cancellation_reason textarea (required, max 500 chars)
+- All action modals have loading state with disabled buttons during API call
 
 ### Edge Cases and States
-- Loading state: Full page skeleton
-- Order not found or not assigned to this jastiper: 403/404 page
+- Loading state: Full page skeleton (text + card + text skeletons)
+- Error state: Error message with "Coba lagi" retry button
+- Order not found or not assigned to this jastiper: 403/404 page (handled by API response)
 - SHIPPED order: Cancel button hidden (only ADMIN can cancel SHIPPED orders)
+- Action failures shown via toast notifications
 
 ---
 
@@ -864,12 +933,12 @@ Full-width layout with Navbar and Sidebar:
 ### User Interactions
 - Clicking "Tarik Dana" expands the withdrawal form or opens a modal
 - Submitting the withdrawal form calls POST /withdrawals with auto-generated idempotency_key
-- On success: toast "Permintaan penarikan berhasil dikirim. Menunggu proses admin."
+- On success: toast "Permintaan withdrawal berhasil dikirim. Menunggu proses admin."
 - Balance is immediately deducted on withdrawal submission
 
 ### Edge Cases and States
 - Loading state: WalletSummary skeleton and TransactionRow skeletons
-- Insufficient balance: Error "Saldo tidak mencukupi untuk penarikan ini"
+- Insufficient balance: Error "Saldo tidak mencukupi untuk withdrawal ini"
 - Duplicate idempotency_key: Error "Permintaan duplikat terdeteksi"
 - Withdrawal pending: Shows pending badge on withdrawal transaction row
 
@@ -1145,7 +1214,7 @@ Admin layout with Navbar and Sidebar:
 
 ### Layout and Components
 Admin layout with Navbar and Sidebar:
-- Two tabs: "Top-Up" and "Penarikan"
+- Two tabs: "Top-Up" and "withdrawal"
 - Top-Up tab: list of PENDING top-up requests — transaction_id, amount, created_at, Approve button, Reject button
 - Withdrawal tab: list of PENDING withdrawal requests — transaction_id, amount, created_at, Approve button, Reject button
 - Reject action opens a modal with a rejection_reason textarea before submitting
@@ -1223,7 +1292,7 @@ Admin layout with Navbar and Sidebar:
 - **File:** src/components/Navbar.tsx
 - **Used on:** All pages
 - **Props:** none (reads from AuthProvider context)
-- **Description:** Top navigation bar. Shows JSON logo (links to /), navigation links based on role (Catalog, Dashboard, Orders, Wallet), user avatar dropdown (Profile, Logout), and wallet balance for authenticated users. Shows Login and Register buttons for guests. Sticky positioned. Uses --color-primary-dark background.
+- **Description:** Top navigation bar. Shows JSON logo (links to /), navigation links based on role (Catalog, Dashboard, Orders, Wallet), user avatar dropdown (Profile, Logout), and wallet balance for authenticated users. Shows Login and Register buttons for guests. Sticky positioned. Uses --color-primary-dark background. Auth gate uses `{accessToken && user}` — both must be non-null to show authenticated UI.
 
 ### Component: Sidebar
 - **File:** src/components/Sidebar.tsx

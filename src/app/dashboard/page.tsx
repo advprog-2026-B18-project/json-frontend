@@ -59,17 +59,14 @@ export default function DashboardPage() {
     try {
       const [profileData, ordersData, walletData] = await Promise.all([
         getMyProfile(accessToken).catch(() => null),
-        getMyPurchases(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }).catch(() => ({ data: [] })),
+        getMyPurchases(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
-
       if (profileData) setProfile(profileData);
-
       setOrders(ordersData?.data || []);
-
-      if (walletData) setWalletBalance(walletData.balance);
-    } catch {
-      // Fail silently
+      setWalletBalance(walletData?.balance || 0);
+    } catch (error){
+      console.log(error)
     } finally {
       setProfileLoading(false);
       setOrdersLoading(false);
@@ -100,11 +97,19 @@ export default function DashboardPage() {
       <Navbar />
       <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Selamat datang, {profile?.full_name || profile?.username || user?.username || 'Titipers'}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Selamat datang, {profile?.full_name || profile?.username || user?.username || 'Titipers'}
+            </p>
+          </div>
+          <button 
+            onClick={fetchDashboard}
+            className="rounded-lg bg-gray-300 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark transition"
+          >
+            Refresh
+          </button>
         </div>
 
         {/* KYC Banner */}
@@ -134,12 +139,6 @@ export default function DashboardPage() {
               className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium hover:bg-white/30 transition"
             >
               Kelola Dompet
-            </Link>
-            <Link
-              href="/wallet"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-(--color-primary-dark) hover:bg-gray-100 transition"
-            >
-              Top Up
             </Link>
           </div>
         </div>

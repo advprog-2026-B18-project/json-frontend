@@ -25,12 +25,34 @@ function formatDate(iso: string): string {
   });
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function OrderStatCard({
+  label,
+  value,
+  color,
+  href,
+  icon,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  href: string;
+  icon: React.ReactNode;
+}) {
   return (
-      <div className="rounded-xl bg-white p-5 shadow-sm border border-gray-100">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
+    <Link
+      href={href}
+      className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary/30 transition block"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500">{label}</p>
+          <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
+        </div>
+        <div className="h-10 w-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+          {icon}
+        </div>
       </div>
+    </Link>
   );
 }
 
@@ -45,14 +67,12 @@ export default function JastiperDashboardPage() {
   const [walletLoading, setWalletLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Auth Guard
   useEffect(() => {
     if (!authLoading && !accessToken) {
-      router.push('/login?redirectedFrom=/jastiper/dashboard');
+      router.push('/login?redirect=/jastiper/dashboard');
     }
   }, [authLoading, accessToken, router]);
 
-  // Role Guard khusus Jastiper
   useEffect(() => {
     if (!authLoading && user && user.role !== 'JASTIPER') {
       router.push('/dashboard');
@@ -62,21 +82,19 @@ export default function JastiperDashboardPage() {
   const fetchDashboard = useCallback(async () => {
     if (!accessToken) return;
     setOrdersLoading(true);
-    setWalletLoading(true);
     setError('');
     try {
       const [ordersData, walletData] = await Promise.all([
-        getMySales(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }).catch(() => ({ data: [] })),
+        getMySales(accessToken, { page: 1, limit: 5, sort_by: 'created_at', order: 'Desc' }),
         authorizedFetch<WalletResponse>('payment', '/wallets/me').catch(() => null),
       ]);
-
       setOrders(ordersData?.data || []);
       if (walletData) setWalletBalance(walletData.balance);
     } catch (err) {
       if (isApiError(err)) {
         setError(err.message);
       } else {
-        setError('Terjadi kesalahan memuat data jastiper.');
+        setError('Terjadi kesalahan');
       }
     } finally {
       setOrdersLoading(false);
@@ -85,186 +103,194 @@ export default function JastiperDashboardPage() {
   }, [accessToken, authorizedFetch]);
 
   useEffect(() => {
-    if (!authLoading && accessToken && user?.role === 'JASTIPER') {
-      fetchDashboard();
-    }
-  }, [authLoading, accessToken, user, fetchDashboard]);
+    if (!authLoading && accessToken) fetchDashboard();
+  }, [authLoading, accessToken, fetchDashboard]);
 
-  const aktifOrders = orders.filter((o) => ['PAID', 'PURCHASED', 'SHIPPED'].includes(o.status));
+  const todoOrders = orders.filter((o) => o.status === 'PAID');
+  const inProgressOrders = orders.filter((o) => ['PURCHASED', 'SHIPPED'].includes(o.status));
   const completedOrders = orders.filter((o) => o.status === 'COMPLETED');
   const cancelledOrders = orders.filter((o) => o.status === 'CANCELLED');
 
-  if (authLoading || !accessToken || (user && user.role !== 'JASTIPER')) {
+  if (authLoading || !accessToken) {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <LoadingSpinner size="lg" />
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
-          {/* Header */}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Jastiper</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Selamat datang, {user?.username || 'Jastiper'}
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Jastiper</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Selamat datang, {user?.username || 'Jastiper'}
+          </p>
+        </div>
 
-          {/* Wallet Section — Menggunakan skema warna khas Jastiper (Orange Gradient v4 murni) */}
-          <div className="rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 p-6 text-white shadow-sm">
-            <p className="text-sm text-white/80">Saldo Dompet Jastiper</p>
-            {walletLoading ? (
-                <div className="h-8 w-40 rounded bg-white/20 animate-pulse mt-1" />
-            ) : walletBalance !== null ? (
-                <p className="mt-1 text-3xl font-extrabold">{formatRupiah(walletBalance)}</p>
-            ) : (
-                <p className="mt-1 text-sm text-white/60">Gagal memuat saldo</p>
-            )}
-            <div className="mt-4 flex gap-3">
-              <Link
-                  href="/jastiper/wallet"
-                  className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium hover:bg-white/30 transition text-white"
-              >
-                Kelola Dompet
-              </Link>
-              <Link
-                  href="/jastiper/wallet/withdraw"
-                  className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-orange-700 hover:bg-gray-100 transition"
-              >
-                Tarik Saldo
-              </Link>
-            </div>
+        {/* Wallet Section */}
+        <div className="rounded-2xl bg-linear-to-br from-(--color-secondary) to-orange-500 p-6 text-white shadow-sm">
+          <p className="text-sm text-white/80">Saldo Dompet</p>
+          {walletLoading ? (
+            <div className="h-8 w-40 rounded bg-white/20 animate-pulse mt-1" />
+          ) : walletBalance !== null ? (
+            <p className="mt-1 text-3xl font-extrabold">{formatRupiah(walletBalance)}</p>
+          ) : (
+            <p className="mt-1 text-sm text-white/60">Gagal memuat saldo</p>
+          )}
+          <div className="mt-4 flex gap-3">
+            <Link
+              href="/wallet"
+              className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium hover:bg-white/30 transition"
+            >
+              Kelola Dompet
+            </Link>
           </div>
+        </div>
 
-          {/* Stats */}
+        {/* Stats */}
+        {ordersLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard label="Pesanan Aktif" value={aktifOrders.length} color="text-blue-600" />
-            <StatCard label="Selesai" value={completedOrders.length} color="text-green-600" />
-            <StatCard label="Dibatalkan" value={cancelledOrders.length} color="text-red-600" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl bg-white p-5 shadow-sm border border-gray-100 animate-pulse">
+                <div className="h-3 w-20 rounded bg-gray-200" />
+                <div className="h-8 w-12 rounded bg-gray-200 mt-2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <OrderStatCard
+              label="To-Do List"
+              value={todoOrders.length}
+              color="text-orange-600"
+              href="/jastiper/orders?status=PAID"
+              icon={
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              }
+            />
+            <OrderStatCard
+              label="Sedang Diproses"
+              value={inProgressOrders.length}
+              color="text-blue-600"
+              href="/jastiper/orders?status=PURCHASED"
+              icon={
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              }
+            />
+            <OrderStatCard
+              label="Selesai"
+              value={completedOrders.length}
+              color="text-green-600"
+              href="/jastiper/orders?status=COMPLETED"
+              icon={
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+            />
+          </div>
+        )}
+
+        {/* Recent Orders */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Pesanan Masuk Terbaru</h2>
+            <Link href="/jastiper/orders" className="text-sm text-(--color-primary) hover:underline">
+              Lihat Semua
+            </Link>
           </div>
 
-          {/* Recent Incoming Orders Table */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Pesanan Masuk Terbaru</h2>
-              <Link href="/jastiper/orders" className="text-sm text-primary hover:underline">
-                Lihat Semua
-              </Link>
+          {ordersLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <SkeletonLoader key={i} variant="row" />)}
             </div>
-
-            {ordersLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => <SkeletonLoader key={i} variant="row" />)}
-                </div>
-            ) : error ? (
-                <div className="rounded-xl bg-white p-6 text-center shadow-sm">
-                  <p className="text-sm text-red-600">{error}</p>
-                  <button
-                      onClick={fetchDashboard}
-                      className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark transition"
-                  >
-                    Coba lagi
-                  </button>
-                </div>
-            ) : orders.length === 0 ? (
-                <EmptyState
-                    title="Belum ada pesanan masuk"
-                    description="Belum ada pembeli yang memesan produk Jastip Anda."
-                    action={{ label: 'Atur Produk Jastip', href: '/jastiper/catalog' }}
-                />
-            ) : (
-                <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
-                  <table className="w-full text-sm">
-                    <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <th className="px-4 py-3">Produk</th>
-                      <th className="px-4 py-3">Pembeli</th>
-                      <th className="px-4 py-3">Total Transaksi</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Tanggal</th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                    {orders.map((order) => (
-                        <tr
-                            key={order.order_id}
-                            onClick={() => router.push(`/jastiper/orders/${order.order_id}`)}
-                            className="hover:bg-gray-50 transition cursor-pointer"
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 shrink-0 rounded bg-gray-100 overflow-hidden">
-                                {order.product_snapshot?.image_url ? (
-                                    <img
-                                        src={order.product_snapshot.image_url}
-                                        alt={order.product_snapshot.name}
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-gray-300 text-xs">
-                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                    </div>
-                                )}
+          ) : error ? (
+            <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                onClick={fetchDashboard}
+                className="mt-3 rounded-lg bg-(--color-primary) px-4 py-2 text-sm text-white hover:bg-(--color-primary-dark) transition"
+              >
+                Coba lagi
+              </button>
+            </div>
+          ) : orders.length === 0 ? (
+            <EmptyState
+              title="Belum ada pesanan masuk"
+              description="Belum ada pembeli yang memesan produk Anda"
+              action={{ label: 'Buka Katalog', href: '/jastiper/catalog' }}
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3">Produk</th>
+                    <th className="px-4 py-3">Pembeli</th>
+                    <th className="px-4 py-3">Total</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Tanggal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {orders.map((order) => (
+                    <tr
+                      key={order.order_id}
+                      onClick={() => router.push(`/jastiper/orders/${order.order_id}`)}
+                      className="hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 shrink-0 rounded bg-gray-100 overflow-hidden">
+                            {order.product_snapshot?.image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={order.product_snapshot.image_url}
+                                alt={order.product_snapshot.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-gray-300 text-xs">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                               </div>
-                              <span className="text-gray-900 font-medium max-w-[160px] truncate">
+                            )}
+                          </div>
+                          <span className="text-gray-900 max-w-[160px] truncate">
                             {order.product_snapshot?.name ?? 'Produk'}
                           </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                            {order.titipers_id ? `${order.titipers_id.slice(0, 8)}...` : '-'}
-                          </td>
-                          <td className="px-4 py-3 font-semibold text-gray-900">
-                            {formatRupiah(order.total_price)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusBadge status={order.status} type="order" />
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-400">
-                            {formatDate(order.created_at)}
-                          </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                  </table>
-                </div>
-            )}
-          </section>
-
-          {/* Quick Links */}
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">Akses Cepat Modul Jastip</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Link
-                  href="/jastiper/orders"
-                  className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-              >
-                <p className="text-sm font-semibold text-gray-900">Kelola Pesanan</p>
-                <p className="text-xs text-gray-500 mt-1">Proses jastip masuk</p>
-              </Link>
-              <Link
-                  href="/jastiper/catalog"
-                  className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-              >
-                <p className="text-sm font-semibold text-gray-900">Katalog Saya</p>
-                <p className="text-xs text-gray-500 mt-1">Atur stok & produk</p>
-              </Link>
-              <Link
-                  href="/jastiper/wallet"
-                  className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center"
-              >
-                <p className="text-sm font-semibold text-gray-900">Dompet Finansial</p>
-                <p className="text-xs text-gray-500 mt-1">Tarik penghasilan</p>
-              </Link>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                        {order.titipers_id.slice(0, 8)}...
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        {formatRupiah(order.total_price)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={order.status} type="order" />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400">
+                        {formatDate(order.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </section>
-        </main>
-      </div>
+          )}
+        </section>
+
+      </main>
+    </div>
   );
 }

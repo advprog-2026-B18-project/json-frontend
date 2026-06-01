@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
-import { login, isApiError, getMyProfile } from '@/services/auth.service';
+import { login, isApiError } from '@/services/auth.service';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 // ---------------------------------------------------------------------------
@@ -30,35 +30,16 @@ function LoginForm() {
     try {
       const data = await login({ email, password });
 
-      const token = (data as any).access_token || (data as any).token || (data as any).refresh_token;
+      // Store access token + user info in context.
+      setAccessToken(data.refresh_token, data.user);
 
-      if (!token) {
-        throw new Error('Token otentikasi tidak ditemukan dalam respon server.');
-      }
-
-      const profileData = await getMyProfile(token);
-
-      setAccessToken(token, {
-        user_id: profileData.user_id,
-        email: profileData.email,
-        role: profileData.role,
-        username: profileData.username,
-        status: profileData.status,
-      });
-
-      const redirectedFrom = searchParams.get('redirectedFrom');
-      if (redirectedFrom) {
-        router.push(redirectedFrom);
-        return;
-      }
-
-      const role = profileData.role?.toUpperCase();
+      const role = data.user?.role?.toUpperCase();
       if (role === 'ADMIN') {
-        router.push('/admin/dashboard');
+        router.push('/admin/catalog');
       } else if (role === 'JASTIPER') {
-        router.push('/jastiper/dashboard');
+        router.push('/jastiper/catalog');
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (err) {
       if (isApiError(err)) {

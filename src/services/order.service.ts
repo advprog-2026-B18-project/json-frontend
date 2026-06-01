@@ -6,7 +6,7 @@
  * All endpoints documented in backend-contracts-order-service.md
  */
 
-import { orderRequest } from './api-client';
+import { ApiError, orderRequest } from './api-client';
 import {
   Order,
   OrderStatus,
@@ -88,12 +88,11 @@ export type OrderHistoryEntry = OrderHistory;
  * @throws ApiError on validation failure, insufficient stock, or insufficient balance
  */
 export async function createOrder(token: string, input: CreateOrderRequest): Promise<Order> {
-  const response = await orderRequest<CreateOrderResponse>('/orders', {
+  return orderRequest<Order>('/orders', {
     method: 'POST',
     token,
     body: input,
   });
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,11 +111,10 @@ export async function createOrder(token: string, input: CreateOrderRequest): Pro
  * @throws ApiError if order not found or user lacks access
  */
 export async function getOrder(token: string, orderId: string): Promise<Order> {
-  const response = await orderRequest<GetOrderResponse>(`/orders/${encodeURIComponent(orderId)}`, {
+  return orderRequest<Order>(`/orders/${encodeURIComponent(orderId)}`, {
     method: 'GET',
     token,
   });
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,14 +133,13 @@ export async function getOrder(token: string, orderId: string): Promise<Order> {
  * @throws ApiError if order is not PENDING, user is not the buyer, or wallet balance is insufficient
  */
 export async function payOrder(token: string, orderId: string): Promise<Order> {
-  const response = await orderRequest<PayOrderResponse>(
+  return orderRequest<Order>(
     `/orders/${encodeURIComponent(orderId)}/payment`,
     {
       method: 'PATCH',
       token,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,14 +161,13 @@ export async function confirmOrder(
   token: string,
   orderId: string
 ): Promise<ConfirmOrderResponse['data']> {
-  const response = await orderRequest<ConfirmOrderResponse>(
+  return orderRequest<ConfirmOrderResponse['data']>(
     `/orders/${encodeURIComponent(orderId)}/confirm`,
     {
       method: 'PATCH',
       token,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,14 +188,13 @@ export async function markPurchased(
   token: string,
   orderId: string
 ): Promise<MarkPurchasedResponse['data']> {
-  const response = await orderRequest<MarkPurchasedResponse>(
+  return orderRequest<MarkPurchasedResponse['data']>(
     `/orders/${encodeURIComponent(orderId)}/purchased`,
     {
       method: 'PATCH',
       token,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,7 +219,7 @@ export async function markShipped(
   trackingNumber?: string | null,
   courier?: string | null
 ): Promise<MarkShippedResponse['data']> {
-  const response = await orderRequest<MarkShippedResponse>(
+  return orderRequest<MarkShippedResponse['data']>(
     `/orders/${encodeURIComponent(orderId)}/shipped`,
     {
       method: 'PATCH',
@@ -235,7 +230,6 @@ export async function markShipped(
       },
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -261,7 +255,7 @@ export async function cancelOrder(
   orderId: string,
   cancellationReason: string
 ): Promise<Order> {
-  const response = await orderRequest<CancelOrderResponse>(
+  return orderRequest<Order>(
     `/orders/${encodeURIComponent(orderId)}/cancel`,
     {
       method: 'POST',
@@ -271,7 +265,6 @@ export async function cancelOrder(
       },
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -290,14 +283,13 @@ export async function cancelOrder(
  * @throws ApiError if order not found or user lacks access
  */
 export async function getOrderHistory(token: string, orderId: string): Promise<OrderHistory[]> {
-  const response = await orderRequest<GetOrderHistoryResponse>(
+  return orderRequest<OrderHistory[]>(
     `/orders/${encodeURIComponent(orderId)}/history`,
     {
       method: 'GET',
       token,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -334,14 +326,26 @@ export async function getMyPurchases(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetMyPurchasesResponse>(
-    `/orders/my/purchases${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
-  );
-  return response.data;
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/orders/my/purchases${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  let body: GetMyPurchasesResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
+  }
+  return { data: body.data, pagination: body.pagination };
 }
 
 // ---------------------------------------------------------------------------
@@ -371,14 +375,26 @@ export async function getMySales(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetMySalesResponse>(
-    `/orders/my/sales${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
-  );
-  return response.data;
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/orders/my/sales${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  let body: GetMySalesResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
+  }
+  return { data: body.data, pagination: body.pagination };
 }
 
 
@@ -403,7 +419,7 @@ export async function rateJastiper(
   orderId: string,
   input: RateJastiperRequest
 ): Promise<RateJastiperResponse['data']> {
-  const response = await orderRequest<RateJastiperResponse>(
+  return orderRequest<RateJastiperResponse['data']>(
     `/orders/${encodeURIComponent(orderId)}/rating/jastiper`,
     {
       method: 'POST',
@@ -411,7 +427,6 @@ export async function rateJastiper(
       body: input,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -432,14 +447,13 @@ export async function getJastiperRating(
   token: string,
   orderId: string
 ): Promise<JastiperRating> {
-  const response = await orderRequest<GetJastiperRatingResponse>(
+  return orderRequest<JastiperRating>(
     `/orders/${encodeURIComponent(orderId)}/rating/jastiper`,
     {
       method: 'GET',
       token,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -463,7 +477,7 @@ export async function rateProduct(
   orderId: string,
   input: RateProductRequest
 ): Promise<RateProductResponse['data']> {
-  const response = await orderRequest<RateProductResponse>(
+  return orderRequest<RateProductResponse['data']>(
     `/orders/${encodeURIComponent(orderId)}/rating/product`,
     {
       method: 'POST',
@@ -471,7 +485,6 @@ export async function rateProduct(
       body: input,
     }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -492,14 +505,94 @@ export async function getProductRating(
   token: string,
   orderId: string
 ): Promise<ProductRating> {
-  const response = await orderRequest<GetProductRatingResponse>(
+  return orderRequest<ProductRating>(
     `/orders/${encodeURIComponent(orderId)}/rating/product`,
     {
       method: 'GET',
       token,
     }
   );
-  return response.data;
+}
+
+// ---------------------------------------------------------------------------
+// getJastiperRatings
+// GET /jastipers/:jastiper_id/ratings
+// Public — no token required
+// Returns ratings list with pagination and average_rating
+// ---------------------------------------------------------------------------
+
+export type JastiperRatingItem = {
+  rating_jastiper_id: string;
+  order_id: string;
+  titipers_id: string;
+  titipers_username?: string | null;
+  jastiper_rating: number;
+  jastiper_review: string | null;
+  created_at: string;
+};
+
+export type JastiperRatingsListResponse = {
+  ratings: JastiperRatingItem[];
+  page: number;
+  limit: number;
+  total: number;
+  average_rating: number;
+};
+
+export type JastiperRatingsParams = {
+  page?: number;
+  limit?: number;
+};
+
+export async function getJastiperRatings(
+  jastiperId: string,
+  params?: JastiperRatingsParams
+): Promise<JastiperRatingsListResponse> {
+  const query = new URLSearchParams();
+  if (params) {
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+  }
+  const qs = query.toString();
+  return orderRequest<JastiperRatingsListResponse>(
+    `/jastipers/${encodeURIComponent(jastiperId)}/ratings${qs ? `?${qs}` : ''}`,
+    { method: 'GET' }
+  );
+}
+
+// ---------------------------------------------------------------------------
+// getProductRatings
+// GET /products/:product_id/ratings
+// Public — no token required
+// ---------------------------------------------------------------------------
+
+export type ProductRatingsListResponse = {
+  ratings: ProductRating[];
+  page: number;
+  limit: number;
+  total: number;
+  average_rating: number;
+};
+
+export type ProductRatingsParams = {
+  page?: number;
+  limit?: number;
+};
+
+export async function getProductRatings(
+  productId: string,
+  params?: ProductRatingsParams
+): Promise<ProductRatingsListResponse> {
+  const query = new URLSearchParams();
+  if (params) {
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+  }
+  const qs = query.toString();
+  return orderRequest<ProductRatingsListResponse>(
+    `/products/${encodeURIComponent(productId)}/ratings${qs ? `?${qs}` : ''}`,
+    { method: 'GET' }
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -533,14 +626,50 @@ export async function adminGetOrders(
     });
   }
   const qs = query.toString();
-  const response = await orderRequest<GetAdminOrdersResponse>(
-    `/admin/orders${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-      token,
-    }
+  const isClient = typeof window !== 'undefined';
+  const baseUrl = isClient ? '/api/order' : process.env.NEXT_PUBLIC_ORDER_SERVICE_URL;
+  const res = await fetch(`${baseUrl}/admin/orders${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  let body: GetAdminOrdersResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok || !body?.data) {
+    throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan admin');
+  }
+  return { data: body.data, pagination: body.pagination };
+}
+
+// ---------------------------------------------------------------------------
+// adminGetOrder
+// GET /admin/orders/:order_id
+// Protected — ADMIN role only
+// ---------------------------------------------------------------------------
+
+/**
+ * Get a single order by ID (admin view).
+ *
+ * @param token - JWT access token
+ * @param orderId - Order UUID
+ * @returns The full Order object
+ * @throws ApiError if order not found or user is not an admin
+ */
+export async function adminGetOrder(
+  token: string,
+  orderId: string
+): Promise<Order> {
+  return orderRequest<Order>(
+    `/admin/orders/${encodeURIComponent(orderId)}`,
+    { method: 'GET', token }
   );
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
@@ -564,7 +693,7 @@ export async function adminForceCancel(
   orderId: string,
   cancellationReason: string
 ): Promise<Order> {
-  const response = await orderRequest<AdminForceCancelResponse>(
+  return orderRequest<Order>(
     `/admin/orders/${encodeURIComponent(orderId)}/force-cancel`,
     {
       method: 'POST',
@@ -574,5 +703,4 @@ export async function adminForceCancel(
       },
     }
   );
-  return response.data;
 }

@@ -5,14 +5,16 @@
  *
  * Features:
  * - Wallet balance card
- * - Top-up form (amount, payment method, bank code) with idempotency key
- * - Transaction history with filter tabs (All, Top-Up, Payment, Refund)
+ * - Top-up modal (amount, payment method, bank code) with idempotency key
+ * - Withdraw modal (amount, bank_account_id, notes) with idempotency key
+ * - Transaction history with filter tabs (All, Top-Up, Payment, Refund, Earning, Withdrawal)
  *
  * Auth: JWT required — redirects to /login if unauthenticated.
  *
  * Payment Service uses RFC 9457 Problem Details errors — parse `detail`, not `message`.
  * All request body fields are snake_case.
  * Top-ups start PENDING — balance does NOT update immediately.
+ * Withdrawals deduct balance immediately and start PENDING.
  * idempotency_key is generated fresh per submission via crypto.randomUUID().
  */
 
@@ -23,16 +25,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useAuthorizedFetch } from '@/lib/api/useAuthorizedFetch';
 import { isApiError } from '@/services/api-client';
-import { Navbar } from '@/components/Navbar';
 import {
   generateIdempotencyKey,
+  requestTopUp,
+  requestWithdrawal,
   type WalletResponse,
   type TransactionSummary,
   type TransactionType,
   type TransactionDirection,
   type TransactionStatus,
   type TopUpPaymentMethod,
+  getTransactions,
 } from '@/services/payment.service';
+import { Navbar } from '@/components/Navbar';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -55,7 +60,7 @@ const TABS: { value: TabFilter; label: string }[] = [
   { value: 'PAYMENT', label: 'Pembayaran' },
   { value: 'REFUND', label: 'Refund' },
   { value: 'EARNING', label: 'Penghasilan' },
-  { value: 'WITHDRAWAL', label: 'Penarikan' },
+  { value: 'WITHDRAWAL', label: 'Withdrawal' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -82,7 +87,7 @@ function txTypeLabel(type: TransactionType): string {
     PAYMENT: 'Pembayaran',
     REFUND: 'Refund',
     EARNING: 'Penghasilan',
-    WITHDRAWAL: 'Penarikan',
+    WITHDRAWAL: 'withdrawal',
     ADJUSTMENT: 'Penyesuaian',
   };
   return map[type] ?? type;
@@ -110,7 +115,7 @@ function StatusPill({ status }: { status: TransactionStatus }) {
     CANCELLED: 'bg-gray-100 text-gray-600',
   };
   return (
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls[status] ?? 'bg-gray-100 text-gray-600'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls[status] ?? 'bg-gray-100 text-gray-600'}`}>
       {statusLabel(status)}
     </span>
   );
@@ -119,13 +124,13 @@ function StatusPill({ status }: { status: TransactionStatus }) {
 function DirectionIcon({ direction }: { direction: TransactionDirection }) {
   if (direction === 'CREDIT') {
     return (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600" aria-hidden="true">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600" aria-hidden="true">
         ↓
       </span>
     );
   }
   return (
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500" aria-hidden="true">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500" aria-hidden="true">
       ↑
     </span>
   );
@@ -138,10 +143,10 @@ function DirectionIcon({ direction }: { direction: TransactionDirection }) {
 type TopUpModalProps = {
   onClose: () => void;
   onSuccess: (message: string) => void;
-  authorizedFetch: ReturnType<typeof useAuthorizedFetch>['authorizedFetch'];
+  accessToken: string;
 };
 
-function TopUpModal({ onClose, onSuccess, authorizedFetch }: TopUpModalProps) {
+function TopUpModal({ onClose, onSuccess, accessToken }: TopUpModalProps) {
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<TopUpPaymentMethod>('BANK_TRANSFER');
   const [bankCode, setBankCode] = useState('BCA');
@@ -166,14 +171,11 @@ function TopUpModal({ onClose, onSuccess, authorizedFetch }: TopUpModalProps) {
 
     setSubmitting(true);
     try {
-      await authorizedFetch<unknown>('payment', '/topups', {
-        method: 'POST',
-        body: {
-          amount: amountNum,
-          payment_method: paymentMethod,
-          bank_code: bankCode,
-          idempotency_key: generateIdempotencyKey(),
-        },
+      await requestTopUp(accessToken, {
+        amount: amountNum,
+        payment_method: paymentMethod,
+        bank_code: bankCode,
+        idempotency_key: generateIdempotencyKey(),
       });
       onSuccess(`Top-up ${formatRupiah(amountNum)} berhasil diajukan. Menunggu konfirmasi admin.`);
       onClose();
@@ -189,123 +191,301 @@ function TopUpModal({ onClose, onSuccess, authorizedFetch }: TopUpModalProps) {
   }
 
   const inputCls =
-      'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-50 disabled:opacity-70';
+    'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-(--color-primary) disabled:bg-gray-50 disabled:opacity-70';
 
   return (
-      <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="topup-modal-title"
-      >
-        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 id="topup-modal-title" className="text-lg font-semibold text-gray-900">
-              Top-Up Saldo
-            </h2>
-            <button
-                onClick={onClose}
-                aria-label="Tutup modal"
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="topup-modal-title"
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 id="topup-modal-title" className="text-lg font-semibold text-gray-900">
+            Top-Up Saldo
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Tutup modal"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          {/* Amount */}
+          <div>
+            <label htmlFor="topup-amount" className="mb-1.5 block text-sm font-medium text-gray-700">
+              Nominal (IDR) <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="topup-amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="100000"
+              min={1}
+              disabled={submitting}
+              className={inputCls}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Amount */}
-            <div>
-              <label htmlFor="topup-amount" className="mb-1.5 block text-sm font-medium text-gray-700">
-                Nominal (IDR) <span className="text-red-500">*</span>
-              </label>
-              <input
-                  id="topup-amount"
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100000"
-                  min={1}
-                  disabled={submitting}
-                  className={inputCls}
-              />
-            </div>
+          {/* Payment method */}
+          <div>
+            <label htmlFor="topup-method" className="mb-1.5 block text-sm font-medium text-gray-700">
+              Metode Pembayaran <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="topup-method"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as TopUpPaymentMethod)}
+              disabled={submitting}
+              className={inputCls}
+            >
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
 
-            {/* Payment method */}
+          {/* Bank code — only for BANK_TRANSFER / VIRTUAL_ACCOUNT */}
+          {needsBankCode && (
             <div>
-              <label htmlFor="topup-method" className="mb-1.5 block text-sm font-medium text-gray-700">
-                Metode Pembayaran <span className="text-red-500">*</span>
+              <label htmlFor="topup-bank" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Bank <span className="text-red-500">*</span>
               </label>
               <select
-                  id="topup-method"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as TopUpPaymentMethod)}
-                  disabled={submitting}
-                  className={inputCls}
+                id="topup-bank"
+                value={bankCode}
+                onChange={(e) => setBankCode(e.target.value)}
+                disabled={submitting}
+                className={inputCls}
               >
-                {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
+                {BANK_CODES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
                 ))}
               </select>
             </div>
+          )}
 
-            {/* Bank code — only for BANK_TRANSFER / VIRTUAL_ACCOUNT */}
-            {needsBankCode && (
-                <div>
-                  <label htmlFor="topup-bank" className="mb-1.5 block text-sm font-medium text-gray-700">
-                    Bank <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                      id="topup-bank"
-                      value={bankCode}
-                      onChange={(e) => setBankCode(e.target.value)}
-                      disabled={submitting}
-                      className={inputCls}
-                  >
-                    {BANK_CODES.map((b) => (
-                        <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-            )}
+          {/* Info note */}
+          <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-800">
+            Top-up akan berstatus <strong>Menunggu</strong> hingga dikonfirmasi oleh admin. Saldo tidak langsung bertambah.
+          </p>
 
-            {/* Info note */}
-            <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-800">
-              Top-up akan berstatus <strong>Menunggu</strong> hingga dikonfirmasi oleh admin. Saldo tidak langsung bertambah.
+          {/* Error */}
+          {error && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
             </p>
+          )}
 
-            {/* Error */}
-            {error && (
-                <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-                  {error}
-                </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-1">
-              <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={submitting}
-                  className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition"
-              >
-                Batal
-              </button>
-              <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting && (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                )}
-                {submitting ? 'Memproses...' : 'Ajukan Top-Up'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-(--color-primary) px-4 py-2.5 text-sm font-semibold text-white hover:bg-(--color-primary-dark) disabled:opacity-60 disabled:cursor-not-allowed transition"
+            >
+              {submitting && (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              )}
+              {submitting ? 'Memproses...' : 'Ajukan Top-Up'}
+            </button>
+          </div>
+        </form>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Withdraw Modal
+// ---------------------------------------------------------------------------
+
+type WithdrawModalProps = {
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+  accessToken: string;
+  walletBalance: number;
+};
+
+function WithdrawModal({ onClose, onSuccess, accessToken, walletBalance }: WithdrawModalProps) {
+  const [amount, setAmount] = useState('');
+  const [bankAccountId, setBankAccountId] = useState('');
+  const [notes, setNotes] = useState('BCA');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    const amountNum = Number(amount);
+    if (!amount || isNaN(amountNum) || amountNum <= 0) {
+      setError('Masukkan nominal yang valid');
+      return;
+    }
+    if (amountNum > walletBalance) {
+      setError(`Saldo tidak mencukupi. Maksimal withdrawal ${formatRupiah(walletBalance)}`);
+      return;
+    }
+    if (!bankAccountId.trim()) {
+      setError('Masukkan nomor rekening tujuan');
+      return;
+    }
+    if (!notes.trim()) {
+      setError('Informasi pemilik rekening wajib diisi');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await requestWithdrawal(accessToken, {
+        amount: amountNum,
+        bank_account_id: bankAccountId.trim(),
+        notes: notes.trim(),
+        idempotency_key: generateIdempotencyKey(),
+      });
+      onSuccess(`withdrawal ${formatRupiah(amountNum)} berhasil diajukan. Saldo akan langsung dikurangi.`);
+      onClose();
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(err.message || 'Gagal mengajukan withdrawal');
+      } else {
+        setError('Terjadi kesalahan. Coba lagi.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const inputCls =
+    'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-(--color-primary) disabled:bg-gray-50 disabled:opacity-70';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="withdraw-modal-title"
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 id="withdraw-modal-title" className="text-lg font-semibold text-gray-900">
+            Tarik Saldo
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Tutup modal"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          {/* Amount */}
+          <div>
+            <label htmlFor="withdraw-amount" className="mb-1.5 block text-sm font-medium text-gray-700">
+              Nominal withdrawal (IDR) <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="withdraw-amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="100000"
+              min={1}
+              disabled={submitting}
+              className={inputCls}
+            />
+          </div>
+
+          {/* Bank account ID */}
+          <div>
+            <label htmlFor="withdraw-bank-account" className="mb-1.5 block text-sm font-medium text-gray-700">
+              Nomor Rekening Tujuan <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="withdraw-bank-account"
+              type="text"
+              value={bankAccountId}
+              onChange={(e) => setBankAccountId(e.target.value)}
+              placeholder="7601234567"
+              disabled={submitting}
+              className={inputCls}
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="withdrawal-bank" className="mb-1.5 block text-sm font-medium text-gray-700">
+            Bank <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="withdrawal-bank"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={submitting}
+              className={inputCls}
+              >
+              {BANK_CODES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Info note */}
+          <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-800">
+            withdrawal akan mengurangi saldo aktif Anda langsung dan menunggu konfirmasi admin.
+          </p>
+
+          {/* Error */}
+          {error && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-(--color-primary) px-4 py-2.5 text-sm font-semibold text-white hover:bg-(--color-primary-dark) disabled:opacity-60 disabled:cursor-not-allowed transition"
+            >
+              {submitting && (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              )}
+              {submitting ? 'Memproses...' : 'Ajukan withdrawal'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -327,16 +507,21 @@ export default function WalletPage() {
 
   const [activeTab, setActiveTab] = useState<TabFilter>('ALL');
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // ---------------------------------------------------------------------------
   // Auth guard
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!authLoading && !accessToken) {
-      router.push('/login?redirectedFrom=/wallet');
+      router.push('/login?redirect=/wallet');
     }
   }, [authLoading, accessToken, router]);
 
+  // ---------------------------------------------------------------------------
   // Fetch wallet
+  // ---------------------------------------------------------------------------
   const fetchWallet = useCallback(async () => {
     if (!accessToken) return;
     setLoadingWallet(true);
@@ -355,13 +540,15 @@ export default function WalletPage() {
     }
   }, [accessToken, authorizedFetch]);
 
+  // ---------------------------------------------------------------------------
   // Fetch transactions
+  // ---------------------------------------------------------------------------
   const fetchTransactions = useCallback(async () => {
     if (!accessToken) return;
     setLoadingTx(true);
     setTxError('');
     try {
-      const data = await authorizedFetch<TransactionSummary[]>('payment', '/transactions');
+      const data = await getTransactions(accessToken);
       setTransactions(data);
     } catch (err) {
       if (isApiError(err)) {
@@ -380,10 +567,16 @@ export default function WalletPage() {
     fetchTransactions();
   }, [authLoading, accessToken, fetchWallet, fetchTransactions]);
 
+  // ---------------------------------------------------------------------------
+  // Filtered transactions
+  // ---------------------------------------------------------------------------
   const filteredTx = activeTab === 'ALL'
-      ? transactions
-      : transactions.filter((tx) => tx.type === (activeTab as TransactionType));
+    ? transactions
+    : transactions.filter((tx) => tx.type === (activeTab as TransactionType));
 
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
   function handleTopUpSuccess(message: string) {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(''), 6000);
@@ -393,159 +586,187 @@ export default function WalletPage() {
     }, 800);
   }
 
+  function handleWithdrawSuccess(message: string) {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 6000);
+    setTimeout(() => {
+      fetchWallet();
+      fetchTransactions();
+    }, 800);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Loading state
+  // ---------------------------------------------------------------------------
   if (authLoading) {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-(--color-primary) border-t-transparent" />
+      </div>
     );
   }
 
   if (!accessToken) return null;
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
+    <div className="min-h-screen bg-gray-50">
+     <Navbar />
 
-        <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">Dompet JSON Saya</h1>
+      <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dompet JSON Saya</h1>
 
-          {/* Success toast */}
-          {successMessage && (
-              <div
-                  role="alert"
-                  className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 flex items-start justify-between gap-3"
-              >
-                <span>✓ {successMessage}</span>
-                <button
-                    onClick={() => setSuccessMessage('')}
-                    aria-label="Tutup notifikasi"
-                    className="shrink-0 text-green-600 hover:text-green-800"
-                >
-                  ✕
-                </button>
-              </div>
+        {/* Success toast */}
+        {successMessage && (
+          <div
+            role="alert"
+            className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 flex items-start justify-between gap-3"
+          >
+            <span>✓ {successMessage}</span>
+            <button
+              onClick={() => setSuccessMessage('')}
+              aria-label="Tutup notifikasi"
+              className="shrink-0 text-green-600 hover:text-green-800"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Wallet balance card */}
+        <div className="rounded-2xl bg-linear-to-br from-(--color-primary) to-(--color-primary-dark) p-6 text-white shadow-md">
+          <p className="text-sm text-white/80 mb-1">Saldo Aktif</p>
+          {loadingWallet ? (
+            <div className="h-10 w-40 animate-pulse rounded-lg bg-white/20 mb-6" />
+          ) : walletError ? (
+            <p className="text-white/70 text-sm mb-6">{walletError}</p>
+          ) : (
+            <p className="text-4xl font-bold mb-6">
+              {wallet ? formatRupiah(wallet.balance) : '—'}
+            </p>
           )}
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowTopUpModal(true)}
+              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100 transition"
+            >
+              + Top-Up
+            </button>
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-(--color-primary-dark) hover:bg-gray-100 transition"
+            >
+              − Withdraw
+            </button>
+          </div>
+        </div>
 
-          {/* Wallet balance card */}
-          <div className="rounded-2xl bg-linear-to-br from-primary to-primary-dark p-6 text-white shadow-md">
-            <p className="text-sm text-white/80 mb-1">Saldo Aktif</p>
-            {loadingWallet ? (
-                <div className="h-10 w-40 animate-pulse rounded-lg bg-white/20 mb-6" />
-            ) : walletError ? (
-                <p className="text-white/70 text-sm mb-6">{walletError}</p>
-            ) : (
-                <p className="text-4xl font-bold mb-6">
-                  {wallet ? formatRupiah(wallet.balance) : '—'}
-                </p>
-            )}
-            <div className="flex flex-wrap gap-3">
+        {/* Transaction history */}
+        <section aria-labelledby="tx-history-heading">
+          <h2 id="tx-history-heading" className="mb-4 text-lg font-semibold text-gray-800">
+            Riwayat Transaksi
+          </h2>
+
+          {/* Filter tabs */}
+          <div
+            className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none"
+            role="tablist"
+            aria-label="Filter transaksi"
+          >
+            {TABS.map((tab) => (
               <button
-                  onClick={() => setShowTopUpModal(true)}
-                  className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-primary-dark hover:bg-gray-100 transition"
+                key={tab.value}
+                role="tab"
+                aria-selected={activeTab === tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  activeTab === tab.value
+                    ? 'bg-(--color-primary) text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-(--color-primary) hover:text-(--color-primary)'
+                }`}
               >
-                + Top-Up
+                {tab.label}
               </button>
-            </div>
+            ))}
           </div>
 
-          {/* Transaction history */}
-          <section aria-labelledby="tx-history-heading">
-            <h2 id="tx-history-heading" className="mb-4 text-lg font-semibold text-gray-800">
-              Riwayat Transaksi
-            </h2>
-
-            {/* Filter tabs */}
-            <div
-                className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none"
-                role="tablist"
-                aria-label="Filter transaksi"
-            >
-              {TABS.map((tab) => (
-                  <button
-                      key={tab.value}
-                      role="tab"
-                      aria-selected={activeTab === tab.value}
-                      onClick={() => setActiveTab(tab.value)}
-                      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                          activeTab === tab.value
-                              ? 'bg-primary text-white'
-                              : 'bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
-                      }`}
-                  >
-                    {tab.label}
-                  </button>
+          {/* Transaction list */}
+          {loadingTx ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm animate-pulse">
+                  <div className="h-8 w-8 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 rounded bg-gray-200" />
+                    <div className="h-3 w-24 rounded bg-gray-100" />
+                  </div>
+                  <div className="h-4 w-20 rounded bg-gray-200" />
+                </div>
               ))}
             </div>
+          ) : txError ? (
+            <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+              <p className="text-sm text-red-600 mb-3">{txError}</p>
+              <button
+                onClick={fetchTransactions}
+                className="rounded-lg bg-(--color-primary) px-4 py-2 text-sm text-white hover:bg-(--color-primary-dark)"
+              >
+                Coba lagi
+              </button>
+            </div>
+          ) : filteredTx.length === 0 ? (
+            <div className="rounded-xl bg-white p-10 text-center shadow-sm">
+              <p className="text-gray-400 text-sm">Belum ada transaksi.</p>
+            </div>
+          ) : (
+            <ul className="space-y-2" aria-label="Daftar transaksi">
+              {filteredTx.map((tx) => (
+                <li
+                  key={tx.transaction_id}
+                  className="flex items-center gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm hover:shadow-md transition"
+                >
+                  <DirectionIcon direction={tx.direction} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {txTypeLabel(tx.type)}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {tx.description || formatDate(tx.created_at)}
+                    </p>
+                    {tx.description && (
+                      <p className="text-xs text-gray-400">{formatDate(tx.created_at)}</p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-semibold ${tx.direction === 'CREDIT' ? 'text-green-600' : 'text-red-500'}`}>
+                      {tx.direction === 'CREDIT' ? '+' : '−'} {formatRupiah(tx.amount)}
+                    </p>
+                    <StatusPill status={tx.status} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </main>
 
-            {/* Transaction list */}
-            {loadingTx ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm animate-pulse">
-                        <div className="h-8 w-8 rounded-full bg-gray-200 shrink-0" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 w-32 rounded bg-gray-200" />
-                          <div className="h-3 w-24 rounded bg-gray-100" />
-                        </div>
-                        <div className="h-4 w-20 rounded bg-gray-200" />
-                      </div>
-                  ))}
-                </div>
-            ) : txError ? (
-                <div className="rounded-xl bg-white p-6 text-center shadow-sm">
-                  <p className="text-sm text-red-600 mb-3">{txError}</p>
-                  <button
-                      onClick={fetchTransactions}
-                      className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark"
-                  >
-                    Coba lagi
-                  </button>
-                </div>
-            ) : filteredTx.length === 0 ? (
-                <div className="rounded-xl bg-white p-10 text-center shadow-sm">
-                  <p className="text-gray-400 text-sm">Belum ada transaksi.</p>
-                </div>
-            ) : (
-                <ul className="space-y-2" aria-label="Daftar transaksi">
-                  {filteredTx.map((tx) => (
-                      <li
-                          key={tx.transaction_id}
-                          className="flex items-center gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm hover:shadow-md transition"
-                      >
-                        <DirectionIcon direction={tx.direction} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {txTypeLabel(tx.type)}
-                          </p>
-                          <p className="text-xs text-gray-400 truncate">
-                            {tx.description || formatDate(tx.created_at)}
-                          </p>
-                          {tx.description && (
-                              <p className="text-xs text-gray-400">{formatDate(tx.created_at)}</p>
-                          )}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className={`text-sm font-semibold ${tx.direction === 'CREDIT' ? 'text-green-600' : 'text-red-500'}`}>
-                            {tx.direction === 'CREDIT' ? '+' : '−'} {formatRupiah(tx.amount)}
-                          </p>
-                          <StatusPill status={tx.status} />
-                        </div>
-                      </li>
-                  ))}
-                </ul>
-            )}
-          </section>
-        </main>
+      {/* Top-Up Modal */}
+      {showTopUpModal && (
+        <TopUpModal
+          onClose={() => setShowTopUpModal(false)}
+          onSuccess={handleTopUpSuccess}
+          accessToken={accessToken}
+        />
+      )}
 
-        {/* Top-Up Modal */}
-        {showTopUpModal && (
-            <TopUpModal
-                onClose={() => setShowTopUpModal(false)}
-                onSuccess={handleTopUpSuccess}
-                authorizedFetch={authorizedFetch}
-            />
-        )}
-      </div>
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <WithdrawModal
+          onClose={() => setShowWithdrawModal(false)}
+          onSuccess={handleWithdrawSuccess}
+          accessToken={accessToken}
+          walletBalance={wallet?.balance ?? 0}
+        />
+      )}
+    </div>
   );
 }
