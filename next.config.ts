@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         source: "/api/inventory/:path*",
         destination: "http://100.55.196.2/inventory/:path*",
       },
+      {
+        source: "/api/order/:path*",
+        destination: "http://100.55.196.2/order/:path*",
+      },
     ];
   },
 };
