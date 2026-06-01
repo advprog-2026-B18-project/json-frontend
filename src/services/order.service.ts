@@ -88,12 +88,11 @@ export type OrderHistoryEntry = OrderHistory;
  * @throws ApiError on validation failure, insufficient stock, or insufficient balance
  */
 export async function createOrder(token: string, input: CreateOrderRequest): Promise<Order> {
-  const response = await orderRequest<CreateOrderResponse>('/orders', {
+  return orderRequest<Order>('/orders', {
     method: 'POST',
     token,
     body: input,
   });
-  return response.data;
 }
 
 // ---------------------------------------------------------------------------
