@@ -335,7 +335,13 @@ export async function getMyPurchases(
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
-  const body = await res.json().catch(() => null) as GetMyPurchasesResponse | null;
+  let body: GetMyPurchasesResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
   if (!res.ok || !body?.data) {
     throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
   }
@@ -378,7 +384,13 @@ export async function getMySales(
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
-  const body = await res.json().catch(() => null) as GetMySalesResponse | null;
+  let body: GetMySalesResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
   if (!res.ok || !body?.data) {
     throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan');
   }
@@ -623,7 +635,13 @@ export async function adminGetOrders(
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
-  const body = await res.json().catch(() => null) as GetAdminOrdersResponse | null;
+  let body: GetAdminOrdersResponse | null = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
   if (!res.ok || !body?.data) {
     throw new ApiError(res.status, body?.message ?? 'Gagal memuat pesanan admin');
   }
